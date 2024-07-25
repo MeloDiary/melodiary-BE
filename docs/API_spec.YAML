@@ -392,11 +392,3 @@ components:
       schema:
         type: integer
         example: 428682
-
-    SearchQuery:
-      name: searchQuery
-      in: query
-      required: true
-      schema:
-        type: string
-        example: 'carrie europe'
