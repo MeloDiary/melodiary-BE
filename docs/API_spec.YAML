@@ -384,11 +384,3 @@ components:
       schema:
         type: integer
         example: 6
-
-    PlaylistId:
-      name: playlistId
-      in: path
-      required: true
-      schema:
-        type: integer
-        example: 428682
