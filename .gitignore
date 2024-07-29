@@ -1,0 +1,9 @@
+# Node modules
+node_modules/
+src/node_modules/
+build/node_modules/
+
+# Environment variables
+.env
+src/.env
+build/.env
