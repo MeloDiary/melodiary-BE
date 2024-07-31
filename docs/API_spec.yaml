@@ -1,0 +1,2609 @@
+openapi: 3.0.0
+info:
+  title: Melodiary API - OpenAPI 3.0
+  description: |
+    ### 당신의 하루를 음악과 함께 기록하세요.
+  contact:
+    email: melodiary@gmail.com
+  version: 1.0.0
+servers:
+  - url: https://api.melodiary.site
+tags:
+  - name: user
+    description: 유저 관련 API
+  - name: auth
+    description: 인증 관련 API
+  - name: mate
+    description: 친구 관련 API
+  - name: notification
+    description: 알림 관련 API
+  - name: diary
+    description: 일기 관련 API
+  - name: comment
+    description: 댓글 관련 API
+  - name: weather
+    description: 날씨 관련 API
+  - name: music
+    description: 음악 관련 API
+
+paths:
+  /api/users:
+    get:
+      tags:
+        - user
+      summary: 닉네임이나 이메일 주소로 사용자 검색
+      description: |
+        query string에 검색할 사용자의 닉네임이나 이메일을 담아야합니다.
+
+        사용자 검색에 성공한 경우 200 코드와 검색된 사용자의 정보를 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      parameters:
+        - $ref: '#/components/parameters/UserNickname'
+        - $ref: '#/components/parameters/UserEmail'
+      responses:
+        '200':
+          description: 검색된 사용자 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MateInfo'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
+        '404':
+          description: 존재하지 않는 사용자
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+    post:
+      tags:
+        - user
+      summary: 회원가입
+      description: |
+        회원가입 성공한 경우 201 코드와 사용자 ID, JWT를 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      requestBody:
+        description: |
+          OAuth 서비스 이름
+
+          권한부여코드 (Authorization code)
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpBody'
+        required: true
+      responses:
+        '201':
+          description: 회원가입 및 유저 생성 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/UserID'
+                  - $ref: '#/components/schemas/AccessToken'
+                  - $ref: '#/components/schemas/RefreshToken'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}:
+    get:
+      tags:
+        - user
+      summary: 사용자 정보 확인
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        사용자 정보를 가져오는데 성공한 경우 200 코드와 사용자의 정보를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: 사용자 정보 가져오기 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 존재하지 않는 사용자
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+    delete:
+      tags:
+        - user
+      summary: 회원 탈퇴
+      description: |
+        path에 회원 탈퇴할 사용자의 ID를 담아야합니다.
+
+        회원 탈퇴 처리가 성공한 경우 200 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: 회원 탈퇴 처리 및 정보 삭제 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The user has deleted'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 존재하지 않는 사용자
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/nicknames:
+    get:
+      tags:
+        - user
+      summary: 닉네임 중복확인
+      description: |
+        query string에 중복확인할 닉네임을 담아야 합니다.
+
+        사용 가능한 닉네임일 경우 200 코드를 리턴합니다.
+
+        중복된 닉네임일 경우 400 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      parameters:
+        - $ref: '#/components/parameters/UserNickname'
+      responses:
+        '200':
+          description: 닉네임 사용 가능
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The nickname is valid'
+        '400':
+          description: 닉네임 사용 불가
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The nickname is duplicated'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/profile-image:
+    post:
+      tags:
+        - user
+      summary: 사용자 프로필 사진 등록
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        프로필 사진 등록에 성공한 경우 200 코드를 리턴합니다.
+
+        요청의 이미지 URL이 유효하지 않은 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      requestBody:
+        description: 등록할 이미지의 URL
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImgURL'
+        required: true
+      responses:
+        '200':
+          description: 프로필 이미지 등록 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully changed the profile image'
+        '400':
+          description: 유효하지 않은 이미지 URL
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The URL is invalid'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 존재하지 않는 사용자
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+    put:
+      tags:
+        - user
+      summary: 사용자 프로필 사진 변경
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        프로필 사진 변경에 성공한 경우 200 코드를 리턴합니다.
+
+        요청의 이미지 URL이 유효하지 않은 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        기존에 등록된 프로필 사진이 없는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      requestBody:
+        description: 변경할 이미지의 URL
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImgURL'
+        required: true
+      responses:
+        '200':
+          description: 프로필 이미지 변경 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully changed the profile image'
+        '400':
+          description: 유효하지 않은 이미지 URL
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The URL is invalid'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 기존에 등록된 프로필 사진이 없음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found existed profile image'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/background-image:
+    post:
+      tags:
+        - user
+      summary: 마이페이지 배경 사진 등록
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        마이페이지 배경 사진 등록에 성공한 경우 200 코드를 리턴합니다.
+
+        요청의 이미지 URL이 유효하지 않은 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      requestBody:
+        description: 등록할 배경 이미지의 URL
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImgURL'
+        required: true
+      responses:
+        '200':
+          description: 마이페이지 배경 이미지 등록 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully changed the profile image'
+        '400':
+          description: 유효하지 않은 이미지 URL
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The URL is invalid'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 존재하지 않는 사용자
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+    put:
+      tags:
+        - user
+      summary: 마이페이지 배경 사진 변경
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        마이페이지 배경 사진 변경에 성공한 경우 200 코드를 리턴합니다.
+
+        요청의 이미지 URL이 유효하지 않은 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        기존에 등록된 마이페이지 배경 사진이 없는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      requestBody:
+        description: 변경할 배경 이미지의 URL
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImgURL'
+        required: true
+      responses:
+        '200':
+          description: 마이페이지 배경 이미지 변경 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully changed the profile image'
+        '400':
+          description: 유효하지 않은 이미지 URL
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The URL is invalid'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 기존에 등록된 마이페이지 배경 사진이 없음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found existed background image'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/login:
+    post:
+      tags:
+        - auth
+      summary: 로그인
+      description: |
+        로그인 성공한 경우 200 코드와 JWT를 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        가입되지 않은 사용자일 경우 404 코드를 리턴합니다. 이 경우 회원가입을 진행해야 합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      requestBody:
+        description: |
+          OAuth 서비스 이름
+
+          권한부여코드(Authorization code)
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpBody'
+        required: true
+      responses:
+        '200':
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/UserID'
+                  - $ref: '#/components/schemas/AccessToken'
+                  - $ref: '#/components/schemas/RefreshToken'
+        '404':
+          description: 해당 유저의 계정이 없음 (회원가입 필요)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Cannot find user account'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/logout:
+    post:
+      tags:
+        - auth
+      summary: 로그아웃
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        사용자 로그아웃에 성공한 경우 200 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: 사용자 JWT 삭제 및 로그아웃 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully log out'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 존재하지 않는 사용자
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/token-refresh:
+    post:
+      tags:
+        - auth
+      summary: Access token 재발급
+      description: |
+        Access token 재발급에 성공한 경우 200 코드와 재발급된 access token과 refresh token을 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        Refresh token이 만료된 경우 401 코드를 리턴합니다. 이 경우 다시 로그인해야 합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: Refresh token
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshToken'
+        required: true
+      responses:
+        '200':
+          description: Access token 재발급 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/UserID'
+                  - $ref: '#/components/schemas/AccessToken'
+                  - $ref: '#/components/schemas/RefreshToken'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
+        '401':
+          description: Refresh token 만료. 재 로그인 해야함
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The refresh token is expired'
+
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/mates:
+    get:
+      tags:
+        - mate
+      summary: 친구 목록 확인
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        친구 목록을 가져오는데 성공한 경우 200 코드와 친구 목록을 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        친구로 등록된 사용자가 없는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: 친구 목록 가져오기 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MateInfo'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 친구로 등록된 사용자가 없음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found any mate'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+    post:
+      tags:
+        - mate
+      summary: 친구 요청 보내기
+      description: |
+        path에 친구 요청 보내는 사용자의 ID를 담아야 합니다.
+
+        친구 요청 보내기 성공한 경우 201 코드와 해당 친구요청ID를 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        친구 요청 받을 사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      requestBody:
+        description: 친구 요청 받는 사용자의 ID
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MateID'
+        required: true
+      responses:
+        '201':
+          description: 친구 요청 보내기 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestID'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 친구로 등록된 사용자가 없음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/mates/{mateID}:
+    delete:
+      tags:
+        - mate
+      summary: 친구 삭제
+      description: |
+        path에 사용자ID와 친구ID를 담아야합니다.
+
+        친구 삭제 처리가 성공한 경우 200 코드를 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        친구ID에 해당하는 사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+        - $ref: '#/components/parameters/MateID'
+      responses:
+        '200':
+          description: 친구 삭제 처리 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully unmated'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 친구ID에 해당하는 사용자가 존재하지 않음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/mates/requests/received:
+    get:
+      tags:
+        - mate
+      summary: 받은 친구 요청 목록 확인
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        받은 친구 요청 목록을 가져오는데 성공한 경우 200 코드와 받은 친구 요청 목록을 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        받은 친구 요청이 없는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: 받은 친구 요청 목록 가져오기 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RequestInfo'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 받은 친구 요청이 없음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found any received request'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/mates/requests/sent:
+    get:
+      tags:
+        - mate
+      summary: 보낸 친구 요청 목록 확인
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        보낸 친구 요청 목록을 가져오는데 성공한 경우 200 코드와 보낸 친구 요청 목록을 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        보낸 친구 요청이 없는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: 보낸 친구 요청 목록 가져오기 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RequestInfo'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 보낸 친구 요청이 없음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found any sent request'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/mates/requests/{requestID}:
+    put:
+      tags:
+        - mate
+      summary: 친구 요청 수락
+      description: |
+        path에 사용자ID와 친구요청ID를 담아야합니다.
+
+        친구 요청 수락 처리가 성공한 경우 200 코드를 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        친구요청ID에 해당하는 요청이 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: 친구 요청 수락 처리 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully accepted the mate request'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 친구요청ID에 해당하는 요청이 존재하지 않음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such request'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+    delete:
+      tags:
+        - mate
+      summary: 친구 요청 거절
+      description: |
+        path에 사용자ID와 친구요청ID를 담아야합니다.
+
+        친구 요청 거절 처리가 성공한 경우 200 코드를 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        친구요청ID에 해당하는 요청이 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: 친구 요청 거절 처리 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully rejected the mate request'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 친구요청ID에 해당하는 요청이 존재하지 않음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such request'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/notifications/unread:
+    get:
+      tags:
+        - notification
+      summary: 읽지 않은 알림 확인
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        읽지 않은 알림이 있는 경우 200 코드와 읽지 않은 알림 목록을 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        읽지 않은 알림이 없는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: 읽지 않은 알림 목록
+          content:
+            application/json:
+              examples:
+                example1:
+                  summary: '일기 관련 알림'
+                  value:
+                    - id: 793
+                      content: 'someone commented on your diary'
+                      diaryId: 2940
+                      category: 'diary'
+                      date: '2024-07-26'
+                example2:
+                  summary: '친구 관련 알림'
+                  value:
+                    - id: 297
+                      content: 'someone wants to be friends with you'
+                      category: 'mate'
+                      date: '2024-07-26'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 읽지 않은 알림 없음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is no unread notification'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/notifications/read:
+    get:
+      tags:
+        - notification
+      summary: 읽은 알림 기록 확인
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        읽은 알림이 있는 경우 200 코드와 읽은 알림 목록을 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        읽은 알림이 없는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: 읽은 알림 목록
+          content:
+            application/json:
+              examples:
+                example1:
+                  summary: '일기 관련 알림'
+                  value:
+                    - id: 793
+                      content: 'someone commented on your diary'
+                      diaryId: 2940
+                      category: 'diary'
+                      date: '2024-07-26'
+                example2:
+                  summary: '친구 관련 알림'
+                  value:
+                    - id: 297
+                      content: 'someone wants to be friends with you'
+                      category: 'mate'
+                      date: '2024-07-26'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 읽은 알림 없음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is no unread notification'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/diaries:
+    post:
+      tags:
+        - diary
+      summary: 일기 작성
+      description: 새 일기 작성
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: 일기 작성 내용
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiaryBody'
+      responses:
+        '200':
+          description: 작성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/{diaryID}:
+    put:
+      tags:
+        - diary
+      summary: 작성된 일기 수정
+      description: 일기 수정
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+
+      requestBody:
+        description: 일기 수정 내용
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiaryBody'
+      responses:
+        '200':
+          description: 작성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+    delete:
+      tags:
+        - diary
+      summary: 일기 삭제
+      description: 일기 삭제
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+      responses:
+        '200':
+          description: 삭제 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+    get:
+      tags:
+        - diary
+      summary: 일기 정보 조회
+      description: 일기 정보 조회
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+      responses:
+        '200':
+          description: 일기 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiaryInfo'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/{diaryID}/like:
+    post:
+      tags:
+        - diary
+      summary: 일기에 좋아요 등록
+      description: 일기에 좋아요 등록
+      security:
+        - BearerAuth: []
+
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+      responses:
+        '200':
+          description: 작성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+    delete:
+      tags:
+        - diary
+      summary: 일기에 좋아요 취소
+      description: 일기에 좋아요 취소
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+      responses:
+        '200':
+          description: 작성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+    get:
+      tags:
+        - diary
+      summary: 일기에 좋아요 여부 확인
+      description: 일기에 좋아요 여부 확인
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+      responses:
+        '200':
+          description: 작성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/calendar:
+    get:
+      tags:
+        - diary
+      summary: 월별 일기 정보 조회
+      description: 지정된 월의 일기 정보를 조회하는 API입니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MateID'
+        - name: month
+          in: query
+          description: 조회할 월
+          required: true
+          schema:
+            type: string
+            example: '2024-07'
+      responses:
+        '200':
+          description: 월별 일기 정보
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date:
+                      type: string
+                      format: date
+                      description: 일기 작성 날짜
+                    diaryId:
+                      type: string
+                      description: 일기 ID
+                    emoji:
+                      type: string
+                      description: 기록된 이모지
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/mates:
+    get:
+      tags:
+        - diary
+      summary: 친구들의 일기 조회
+      description: 친구들이 공개한 일기를 최신순으로 조회한다.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 친구들의 일기 최신순 조회
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diaries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        diaryId:
+                          type: string
+                          description: 일기 ID
+                        date:
+                          type: string
+                          format: date
+                          description: 일기 작성 날짜
+                        emoji:
+                          type: string
+                          description: 기록된 이모지
+                        weather:
+                          type: string
+                          description: 기록된 날씨
+                        location:
+                          type: string
+                          description: 위치
+                        mood:
+                          type: string
+                          description: 기록된 기분 태그
+                        title:
+                          type: string
+                          description: 일기 제목
+                        content:
+                          type: string
+                          description: 일기 내용
+                        img_url:
+                          type: string
+                          description: 첨부 사진 URL
+                        music_url:
+                          type: string
+                          description: 유튜브 영상 URL
+                        privacy:
+                          type: string
+                          description: 공개 범위
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/explore:
+    get:
+      tags:
+        - diary
+      summary: 전체 공개 글 피드 조회
+      description: 전체 공개 된 글 중 추천 피드를 조회
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 친구들의 일기 최신순 조회
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diaries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        diaryId:
+                          type: string
+                          description: 일기 ID
+                        date:
+                          type: string
+                          format: date
+                          description: 일기 작성 날짜
+                        emoji:
+                          type: string
+                          description: 기록된 이모지
+                        weather:
+                          type: string
+                          description: 기록된 날씨
+                        location:
+                          type: string
+                          description: 위치
+                        mood:
+                          type: string
+                          description: 기록된 기분 태그
+                        title:
+                          type: string
+                          description: 일기 제목
+                        content:
+                          type: string
+                          description: 일기 내용
+                        img_url:
+                          type: string
+                          description: 첨부 사진 URL
+                        music_url:
+                          type: string
+                          description: 유튜브 영상 URL
+                        privacy:
+                          type: string
+                          description: 공개 범위
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/myposts:
+    get:
+      tags:
+        - diary
+      summary: 작성한 일기 목록 조회
+      description: 내가 작성한 일기 목록을 확인한다.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 내 일기 최신순 조회
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diaries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        diaryId:
+                          type: string
+                          description: 일기 ID
+                        date:
+                          type: string
+                          format: date
+                          description: 일기 작성 날짜
+                        emoji:
+                          type: string
+                          description: 기록된 이모지
+                        weather:
+                          type: string
+                          description: 기록된 날씨
+                        location:
+                          type: string
+                          description: 위치
+                        mood:
+                          type: string
+                          description: 기록된 기분 태그
+                        title:
+                          type: string
+                          description: 일기 제목
+                        content:
+                          type: string
+                          description: 일기 내용
+                        img_url:
+                          type: string
+                          description: 첨부 사진 URL
+                        music_url:
+                          type: string
+                          description: 유튜브 영상 URL
+                        privacy:
+                          type: string
+                          description: 공개 범위
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/mymoods:
+    get:
+      tags:
+        - diary
+      summary: 기분 변화 통계 조회
+      description: 기분 변화 통계를 조회한다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MateID'
+        - name: month
+          in: query
+          description: 조회할 월
+          required: true
+          schema:
+            type: string
+            example: '2024-07'
+      responses:
+        '200':
+          description: 월별 일기 정보
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diaries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                          description: 일기 작성 날짜
+                        mood:
+                          type: string
+                          description: 기분
+                        emoji:
+                          type: string
+                          description: 기록된 이모지
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/{diaryID}/comments:
+    get:
+      tags:
+        - comment
+      summary: 댓글 목록 조회
+      description: 댓글 목록 조회
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+      responses:
+        '200':
+          description: 댓글 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                          description: 댓글 작성 날짜
+                        commentId:
+                          type: string
+                          description: 댓글 ID
+                        emoji:
+                          type: string
+                          description: 기록된 이모지
+                        content:
+                          type: string
+                          description: 댓글 내용
+                        userId:
+                          type: string
+                          description: 멘션한 유저 Id
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+    post:
+      tags:
+        - comment
+      summary: 댓글 작성
+      description: 새 댓글 작성
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+      requestBody:
+        description: 댓글 작성 내용
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: 댓글 내용
+                userId:
+                  type: string
+                  description: 멘션할 유저 Id
+        required: true
+      responses:
+        '200':
+          description: 작성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/{diaryID}/comments/{commentID}:
+    put:
+      tags:
+        - comment
+      summary: 댓글 수정
+      description: 댓글 수정
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+        - $ref: '#/components/parameters/CommentID'
+      requestBody:
+        description: 댓글 수정 내용
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                diaryId:
+                  type: string
+                  description: 일기 ID
+                content:
+                  type: string
+                  description: 댓글 내용
+                userId:
+                  type: string
+                  description: 멘션할 유저 Id
+                commentId:
+                  type: string
+                  description: 수정할 댓글 Id
+              required:
+                - diaryId
+                - content
+        required: true
+      responses:
+        '200':
+          description: 작성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+    delete:
+      tags:
+        - comment
+      summary: 댓글 삭제
+      description: 댓글 삭제
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+        - $ref: '#/components/parameters/CommentID'
+      responses:
+        '200':
+          description: 댓글 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                          description: 댓글 작성 날짜
+                        commentId:
+                          type: string
+                          description: 댓글 ID
+                        emoji:
+                          type: string
+                          description: 기록된 이모지
+                        content:
+                          type: string
+                          description: 댓글 내용
+                        userId:
+                          type: string
+                          description: 멘션한 유저 Id
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/weather:
+    post:
+      tags:
+        - weather
+      summary: 오늘의 날씨정보 조회
+      description: 오늘의 날씨 정보를 조회합니다.
+      requestBody:
+        description: 현재 위치 정보
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latitude:
+                  type: string
+                  description: 위도
+                longitude:
+                  type: string
+                  description: 경도
+        required: true
+      responses:
+        '200':
+          description: 오늘의 날씨 정보
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  musics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        music_url:
+                          type: string
+                          description: 유튜브 음악 url
+                        title:
+                          type: string
+                          description: 음악 제목
+                        artist:
+                          type: string
+                          description: 아티스트 이름
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/{diaryID}/weather:
+    get:
+      tags:
+        - weather
+      summary: 날씨정보 조회
+      description: 작성된 일기의 날씨 정보를 조회합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+      responses:
+        '200':
+          description: 월별 일기 정보
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  musics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        music_url:
+                          type: string
+                          description: 유튜브 음악 url
+                        title:
+                          type: string
+                          description: 음악 제목
+                        artist:
+                          type: string
+                          description: 아티스트 이름
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/diaries/{diaryID}/music:
+    get:
+      tags:
+        - music
+      summary: 음악 정보 조회
+      description: 작성한 일기에 해당하는 음악 정보를  조회합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DiaryID'
+      responses:
+        '200':
+          description: 월별 일기 정보
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  musics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        music_url:
+                          type: string
+                          description: 유튜브 음악 url
+                        title:
+                          type: string
+                          description: 음악 제목
+                        artist:
+                          type: string
+                          description: 아티스트 이름
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/users/{userID}/music:
+    get:
+      tags:
+        - user
+        - music
+      summary: 음악 사용기록 조회
+      description: 유저가 사용한 음악 사용 기록을 조회합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: 월별 일기 정보
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  musics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        music_url:
+                          type: string
+                          description: 유튜브 음악 url
+                        title:
+                          type: string
+                          description: 음악 제목
+                        artist:
+                          type: string
+                          description: 아티스트 이름
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+          example: 'The link is valid'
+
+    SignUpBody:
+      type: object
+      properties:
+        serviceProvider:
+          type: string
+          example: 'Google'
+        authorizationCode:
+          type: string
+          example: 'example code'
+
+    AccessToken:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+
+    RefreshToken:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+
+    UserInfo:
+      type: object
+      properties:
+        userID:
+          type: integer
+          example: 58
+        profileImgURL:
+          type: string
+          example: 'S3 bucket image url'
+        profileBackgroundImgURL:
+          type: string
+          example: 'S3 bucket image url'
+        nickname:
+          type: string
+          example: 'musseuk'
+        emailAddress:
+          type: string
+          example: 'musseuk@example.com'
+        mateCount:
+          type: integer
+          example: 15
+        diaryCount:
+          type: integer
+          example: 27
+
+    MateInfo:
+      type: object
+      properties:
+        userID:
+          type: integer
+          example: 3798
+        nickname:
+          type: string
+          example: 'loopy'
+        profileImgURL:
+          type: string
+          example: 'S3 bucket image url'
+
+    RequestInfo:
+      type: object
+      properties:
+        userID:
+          type: integer
+          example: 3798
+        nickname:
+          type: string
+          example: 'loopy'
+        profileImgURL:
+          type: string
+          example: 'S3 bucket image url'
+        requestID:
+          type: integer
+          example: 157
+
+    ImgURL:
+      type: object
+      properties:
+        URL:
+          type: string
+          example: 'S3 bucket image url'
+
+    UserID:
+      type: object
+      properties:
+        userID:
+          type: integer
+          example: 986
+
+    MateID:
+      type: object
+      properties:
+        mateID:
+          type: integer
+          example: 986
+
+    RequestID:
+      type: object
+      properties:
+        requestID:
+          type: integer
+          example: 157
+
+    DiaryInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 58
+        title:
+          type: string
+          example: 'diary title'
+        content:
+          type: string
+          example: 'diary content'
+        user_id:
+          type: integer
+          example: 'writer'
+        img_url:
+          type: string
+          example: 'S3 bucket image url'
+        mood:
+          type: string
+          example: 'happy'
+        emoji:
+          type: string
+          example: '&#128057;'
+        privacy:
+          type: string
+          example: 'mate'
+        like_count:
+          type: integer
+          example: 99
+        created_at:
+          type: string
+          example: '2024-07-31'
+
+    DiaryBody:
+      type: object
+      properties:
+        title:
+          type: string
+          example: 'diary title'
+        content:
+          type: string
+          example: 'diary content'
+        img_url:
+          type: string
+          example: 'S3 bucket image url'
+        mood:
+          type: string
+          example: 'happy'
+        emoji:
+          type: string
+          example: '&#128057;'
+        privacy:
+          type: string
+          example: 'mate'
+        location:
+          type: string
+          description: 위치
+        weather:
+          type: string
+          description: 기상
+        avg_temperature:
+          type: string
+          description: 평균기온
+
+    WeatherInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 58
+        diary_id:
+          type: integer
+          example: 58
+        location:
+          type: string
+          example: 'Seoul'
+        icon:
+          type: string
+          example: '맑음'
+        avg_temperature:
+          type: integer
+          example: 32
+
+  parameters:
+    UserID:
+      name: userID
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 2764
+
+    MateID:
+      name: mateID
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 658
+
+    RequestID:
+      name: requestID
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 1427
+
+    UserNickname:
+      name: nickname
+      in: query
+      schema:
+        type: string
+        example: 'musseuk'
+
+    UserEmail:
+      name: email
+      in: query
+      schema:
+        type: string
+        example: 'musseuk@example.com'
+
+    DiaryID:
+      name: diaryID
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 2764
+
+    CommentID:
+      name: commentID
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 2764
