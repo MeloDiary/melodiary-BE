@@ -4,7 +4,7 @@ import apiSpecRouter from './routes/apiSpecRoutes.js';
 const app: Application = express();
 
 app.use(express.json());
-app.use('/api', apiSpecRouter);
+app.use('/api-spec', apiSpecRouter);
 app.get('/', (_, res: Response) => {
   res.status(200).json({ message: 'Welcome!' });
 });
