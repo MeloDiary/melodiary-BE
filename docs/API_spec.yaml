@@ -5,7 +5,7 @@ info:
     ### 당신의 하루를 음악과 함께 기록하세요.
   contact:
     email: melodiary@gmail.com
-  version: 1.0.0
+  version: 1.0.1
 servers:
   - url: https://api.melodiary.site
 tags:
@@ -272,6 +272,154 @@ paths:
                 example:
                   message: 'There is something wrong with the server'
 
+  /api/users/{userID}/nickname:
+    post:
+      tags:
+        - user
+      summary: 사용자 닉네임 등록
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        닉네임 등록에 성공한 경우 201 코드를 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      requestBody:
+        description: 등록할 닉네임
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserNickname'
+        required: true
+      responses:
+        '201':
+          description: 닉네임 등록 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully posted the nickname'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 존재하지 않는 사용자
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+    put:
+      tags:
+        - user
+      summary: 사용자 닉네임 변경
+      description: |
+        path에 사용자ID를 담아야합니다.
+
+        닉네임 변경에 성공한 경우 200 코드를 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      requestBody:
+        description: 변경할 닉네임
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserNickname'
+        required: true
+      responses:
+        '200':
+          description: 닉네임 변경 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully changed the nickname'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '404':
+          description: 존재하지 않는 사용자
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
   /api/users/{userID}/profile-image:
     post:
       tags:
@@ -280,7 +428,7 @@ paths:
       description: |
         path에 사용자ID를 담아야합니다.
 
-        프로필 사진 등록에 성공한 경우 200 코드를 리턴합니다.
+        프로필 사진 등록에 성공한 경우 201 코드를 리턴합니다.
 
         요청의 이미지 URL이 유효하지 않은 경우 400 코드를 리턴합니다.
 
@@ -301,7 +449,7 @@ paths:
               $ref: '#/components/schemas/ImgURL'
         required: true
       responses:
-        '200':
+        '201':
           description: 프로필 이미지 등록 성공
           content:
             application/json:
@@ -2551,7 +2699,14 @@ components:
           example: '맑음'
         avg_temperature:
           type: integer
-          example: 32
+          example:
+
+    UserNickname:
+      type: object
+      properties:
+        nickname:
+          type: string
+          example: 'musseuk'
 
   parameters:
     UserID:
