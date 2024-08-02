@@ -9,15 +9,30 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+      REDIS_ENDPOINT: ${{ secrets.REDIS_ENDPOINT }}
+      REDIS_SECRET: ${{ secrets.REDIS_SECRET }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      NODE_ENV: ${{ secrets.NODE_ENV }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -25,7 +40,20 @@ jobs:
       - name: Build and push Docker image
         run: |
           IMAGE_TAG=${{ github.sha }}
-          docker build -t dukovkodev335/melodiary-server:${IMAGE_TAG} .
+          docker build --build-arg GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
+                       --build-arg GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET} \
+                       --build-arg GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI} \
+                       --build-arg REDIS_ENDPOINT=${REDIS_ENDPOINT} \
+                       --build-arg REDIS_SECRET=${REDIS_SECRET} \
+                       --build-arg JWT_SECRET=${JWT_SECRET} \
+                       --build-arg JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET} \
+                       --build-arg DB_HOST=${DB_HOST} \
+                       --build-arg DB_PORT=${DB_PORT} \
+                       --build-arg DB_USER=${DB_USER} \
+                       --build-arg DB_PASSWORD=${DB_PASSWORD} \
+                       --build-arg DB_NAME=${DB_NAME} \
+                       --build-arg NODE_ENV=${NODE_ENV} \
+                       -t dukovkodev335/melodiary-server:${IMAGE_TAG} .
           docker tag dukovkodev335/melodiary-server:${IMAGE_TAG} dukovkodev335/melodiary-server:latest
           docker push dukovkodev335/melodiary-server:${IMAGE_TAG}
           docker push dukovkodev335/melodiary-server:latest
