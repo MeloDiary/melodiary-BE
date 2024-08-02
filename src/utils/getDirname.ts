@@ -1,3 +1,4 @@
+// 현재 모듈의 디렉토리 경로를 리턴하는 함수
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
