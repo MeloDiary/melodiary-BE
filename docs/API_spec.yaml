@@ -428,7 +428,7 @@ paths:
       description: |
         path에 사용자ID를 담아야합니다.
 
-        프로필 사진 등록에 성공한 경우 200 코드를 리턴합니다.
+        프로필 사진 등록에 성공한 경우 201 코드를 리턴합니다.
 
         요청의 이미지 URL이 유효하지 않은 경우 400 코드를 리턴합니다.
 
@@ -449,7 +449,7 @@ paths:
               $ref: '#/components/schemas/ImgURL'
         required: true
       responses:
-        '200':
+        '201':
           description: 프로필 이미지 등록 성공
           content:
             application/json:
