@@ -12,8 +12,8 @@
     "lib": ["es2020", "dom"],
     "moduleResolution": "node",
     "outDir": "./build",
-    "rootDir": "./src"
+    "rootDir": "."
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "app.ts"],
   "exclude": ["node_modules", "build"]
 }
