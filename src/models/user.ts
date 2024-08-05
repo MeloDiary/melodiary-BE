@@ -36,13 +36,13 @@ class User {
   }
 
   // 사용자 이메일을 받아서 이미 존재하는 유저인지 확인하는 메서드
-  static async isUserExists(email: string): Promise<boolean> {
+  static async isUserExists(email: string): Promise<number | null> {
     try {
-      const query = 'SELECT 1 FROM user WHERE email = ?';
+      const query = 'SELECT * FROM user WHERE email = ?';
       const params = [email];
       const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
 
-      return results.length ? true : false;
+      return results.length ? results[0].id : null;
     } catch (error) {
       console.error(`Error checking if user exists: ${email}`, error);
       throw new Error('Database query failed');

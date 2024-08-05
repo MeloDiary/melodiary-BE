@@ -802,6 +802,15 @@ paths:
                   - $ref: '#/components/schemas/UserID'
                   - $ref: '#/components/schemas/AccessToken'
                   - $ref: '#/components/schemas/RefreshToken'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
         '404':
           description: 해당 유저의 계정이 없음 (회원가입 필요)
           content:
@@ -1421,7 +1430,7 @@ paths:
                 example1:
                   summary: '일기 관련 알림'
                   value:
-                    - request_id: 793
+                    - notification_id: 793
                       content: 'someone commented on your diary'
                       diary_id: 2940
                       category: 'diary'
@@ -1429,8 +1438,9 @@ paths:
                 example2:
                   summary: '친구 관련 알림'
                   value:
-                    - request_id: 297
+                    - notification_id: 728
                       content: 'someone wants to be friends with you'
+                      request_id: 297
                       category: 'mate'
                       date: '2024-07-26'
         '401':
@@ -1489,7 +1499,7 @@ paths:
                 example1:
                   summary: '일기 관련 알림'
                   value:
-                    - request_id: 793
+                    - notification_id: 793
                       content: 'someone commented on your diary'
                       diary_id: 2940
                       category: 'diary'
@@ -1497,8 +1507,9 @@ paths:
                 example2:
                   summary: '친구 관련 알림'
                   value:
-                    - request_id: 297
+                    - notification_id: 728
                       content: 'someone wants to be friends with you'
+                      request_id: 297
                       category: 'mate'
                       date: '2024-07-26'
         '401':
@@ -2808,7 +2819,7 @@ components:
       properties:
         service_provider:
           type: string
-          example: 'Google'
+          example: 'google'
         authorization_code:
           type: string
           example: 'example code'
