@@ -7,6 +7,7 @@ import apiSpecRouter from './src/routes/apiSpecRoutes.js';
 import userRouter from './src/routes/userRoutes.js';
 
 const app: Application = express();
+const port = parseInt(process.env.PORT || '4000', 10);
 
 // 개발환경과 배포환경에서 각각 다른 로깅 모듈 사용
 if (process.env.NODE_ENV === 'production') {
@@ -21,7 +22,11 @@ app.use(express.json());
 // CORS 설정
 app.use(
   cors({
-    origin: 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000',
+      'https://melodiary.site',
+      'https://melo-diary.vercel.app'
+    ],
     methods: 'GET, POST, PUT, DELETE',
     credentials: true
   })
@@ -35,6 +40,6 @@ app.get('/', (_, res: Response) => {
   res.status(200).json({ message: 'Welcome!' });
 });
 
-app.listen(4000, '0.0.0.0', () => {
-  console.log(`Port 4000 ready`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Port ${port} ready`);
 });

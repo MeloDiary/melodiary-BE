@@ -1,5 +1,6 @@
 // JWT 발급, 검증 관련 service
 import jwt, { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
+import redisClient from '../config/redisConfig.js';
 
 /**
  * Acess token을 생성하는 함수입니다.
@@ -42,10 +43,48 @@ export const generateRefreshToken = (payload: object): string => {
 };
 
 /**
+ * JWT를 Redis에 저장하는 함수입니다.
+ * @param userId - 사용자 ID
+ * @param accessToken - 생성한 access token
+ * @param refreshToken - 생성한 refresh token
+ */
+export const storeJWTInRedis = async (
+  userId: number,
+  accessToken: string,
+  refreshToken: string
+): Promise<void> => {
+  try {
+    const userIdString = userId.toString();
+    await redisClient.hSet(userIdString, {
+      accessToken,
+      refreshToken
+    });
+    console.log('Tokens saved to Redis');
+  } catch (err) {
+    console.error('Failed to store tokens in Redis', err.message);
+    throw new Error('Error occured during stroing JWT');
+  }
+};
+
+/**
+ * Redis에 저장된 JWT를 삭제하는 함수입니다.
+ * @param userId - 사용자 ID
+ */
+export const deleteJWTInRedis = async (userId: number): Promise<void> => {
+  try {
+    const userIdString = userId.toString();
+    await redisClient.del(userIdString);
+    console.log('Tokens deleted from Redis');
+  } catch (err) {
+    console.error('Failed to delete tokens in Redis', err.message);
+    throw new Error('Error occured during deleting JWT');
+  }
+};
+
+/**
  * Access token을 검증하는 함수입니다.
  * @param token - 검증할 access token
  * @returns The decoded token payload if verification is successful
- * @throws If the token is invalid or expired
  */
 export const verifyAccessToken = (token: string): object => {
   try {
