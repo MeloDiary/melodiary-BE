@@ -85,7 +85,6 @@ export const deleteJWTInRedis = async (userId: number): Promise<void> => {
  * Access token을 검증하는 함수입니다.
  * @param token - 검증할 access token
  * @returns The decoded token payload if verification is successful
- * @throws If the token is invalid or expired
  */
 export const verifyAccessToken = (token: string): object => {
   try {
