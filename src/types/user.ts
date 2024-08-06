@@ -10,4 +10,5 @@ export interface IUser {
 export interface IAuthRequest {
   serviceProvider: 'google' | 'naver' | 'kakao';
   authorizationCode: string;
+  state: string;
 }

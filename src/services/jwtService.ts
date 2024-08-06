@@ -59,6 +59,7 @@ export const storeJWTInRedis = async (
       accessToken,
       refreshToken
     });
+    await redisClient.expire(userIdString, 7 * 24 * 60 * 60);
     console.log('Tokens saved to Redis');
   } catch (err) {
     console.error('Failed to store tokens in Redis', err.message);
@@ -86,9 +87,10 @@ export const deleteJWTInRedis = async (userId: number): Promise<void> => {
  * @param token - 검증할 access token
  * @returns The decoded token payload if verification is successful
  */
-export const verifyAccessToken = (token: string): object => {
+export const verifyAccessToken = async (token: string): Promise<object> => {
   try {
     const jwtSecret: Secret = process.env.JWT_SECRET as string;
+
     return jwt.verify(token, jwtSecret) as JwtPayload;
   } catch (error) {
     throw new Error('Invalid or expired access token');
@@ -101,7 +103,7 @@ export const verifyAccessToken = (token: string): object => {
  * @returns The decoded token payload if verification is successful
  * @throws If the token is invalid or expired
  */
-export const verifyRefreshToken = (token: string): object => {
+export const verifyRefreshToken = async (token: string): Promise<object> => {
   try {
     const jwtRefreshSecret: Secret = process.env.JWT_REFRESH_SECRET as string;
     return jwt.verify(token, jwtRefreshSecret) as JwtPayload;
