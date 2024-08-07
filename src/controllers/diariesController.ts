@@ -2,7 +2,7 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { Request, Response } from 'express';
 //import { StatusCodes } from 'http-status-codes';
 import dbPool from '../config/dbConfig.js';
-import { IDiary, IPostDiary } from '../types/diary';
+import { IPostDiary } from '../types/diary';
 
 export const postDiary = async (req: Request, res: Response) => {
   try {
@@ -93,9 +93,9 @@ export const putDiary = async (req: Request, res: Response) => {
       privacy,
       background_color,
       music,
-      weather,
-      img_urls
-    }: IPostDiary = req.body;
+      weather
+    }: //img_urls
+    IPostDiary = req.body;
 
     // Update the diary table
     const diaryQuery = `
@@ -307,10 +307,7 @@ export const postLike = async (req: Request, res: Response) => {
     // diary 테이블에 데이터 삽입
     const query = `INSERT INTO likes (user_id, diary_id) VALUES (?, ?)`;
 
-    const [result] = await dbPool.execute<RowDataPacket[]>(query, [
-      userID,
-      diaryId
-    ]);
+    await dbPool.execute<RowDataPacket[]>(query, [userID, diaryId]);
 
     const diaryQuery = `
       UPDATE diary 
@@ -332,10 +329,7 @@ export const deleteLike = async (req: Request, res: Response) => {
 
     // diary 테이블에 데이터 삽입
     const query = `DELETE FROM likes WHERE user_id =? AND diary_id= ?`;
-    const [result] = await dbPool.execute<RowDataPacket[]>(query, [
-      userID,
-      diaryId
-    ]);
+    await dbPool.execute<RowDataPacket[]>(query, [userID, diaryId]);
 
     const diaryQuery = `
       UPDATE diary 
@@ -350,8 +344,8 @@ export const deleteLike = async (req: Request, res: Response) => {
     res.status(500).send('There is something wrong with the server');
   }
 };
-export const getCalendar = async (req: Request, res: Response) => {};
-export const getMatefeeds = async (req: Request, res: Response) => {};
-export const getExplore = async (req: Request, res: Response) => {};
-export const getMypost = async (req: Request, res: Response) => {};
-export const getMymoods = async (req: Request, res: Response) => {};
+// export const getCalendar = async (req: Request, res: Response) => {};
+// export const getMatefeeds = async (req: Request, res: Response) => {};
+// export const getExplore = async (req: Request, res: Response) => {};
+// export const getMypost = async (req: Request, res: Response) => {};
+// export const getMymoods = async (req: Request, res: Response) => {};
