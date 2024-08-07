@@ -96,6 +96,8 @@ paths:
           OAuth 서비스 이름
 
           권한부여코드 (Authorization code)
+
+          클라이언트에서 설정한 state
         content:
           application/json:
             schema:
@@ -276,7 +278,7 @@ paths:
                 example:
                   message: 'The nickname is valid'
         '400':
-          description: 닉네임 사용 불가
+          description: 잘못된 요청 구문
           content:
             application/json:
               schema:
@@ -787,6 +789,8 @@ paths:
           OAuth 서비스 이름
 
           권한부여코드(Authorization code)
+
+          클라이언트에서 설정한 state
         content:
           application/json:
             schema:
@@ -2823,6 +2827,9 @@ components:
         authorization_code:
           type: string
           example: 'example code'
+        state:
+          type: string
+          example: 'state value'
 
     AccessToken:
       type: object
