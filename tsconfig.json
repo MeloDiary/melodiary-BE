@@ -11,9 +11,10 @@
     "esModuleInterop": true,
     "lib": ["es2020", "dom"],
     "moduleResolution": "node",
+    "typeRoots": ["./types", "./node_modules/@types"],
     "outDir": "./build",
     "rootDir": "."
   },
-  "include": ["src/**/*.ts", "app.ts"],
+  "include": ["src/**/*.ts", "types/**/*.ts", "app.ts"],
   "exclude": ["node_modules", "build"]
 }

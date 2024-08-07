@@ -21,14 +21,12 @@ export const verifyTokenMiddleware = async (
   try {
     // 토큰 검증
     const decoded = (await verifyAccessToken(token)) as JwtPayload;
-    const { userID } = req.params;
-    const tokenUserID = decoded.userId;
+    req.user = decoded;
 
-    if (userID !== String(tokenUserID)) {
-      return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
-    }
     next(); // 다음 미들웨어 또는 라우트 핸들러로 이동
   } catch (error) {
-    return res.status(403).json({ message: 'Invalid or expired token' });
+    return res
+      .status(401)
+      .json({ message: 'The access token is invalid or expired' });
   }
 };
