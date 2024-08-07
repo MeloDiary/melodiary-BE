@@ -19,6 +19,9 @@ export const postDiary = async (req: Request, res: Response) => {
       weather
     }: IPostDiary = req.body;
 
+    // 아래와 같은 방식으로 토큰의 사용자 ID 사용하시면 됩니다!
+    // const tokenUserID = (req.user as JwtPayload).userId;
+
     // diary 테이블에 데이터 삽입
     const diaryQuery = `INSERT INTO diary (title, content, user_id, mood, emoji, privacy, background_color) 
                       VALUES (?, ?, ?, ?, ?, ?, ?)`;

@@ -1,5 +1,6 @@
 // 사용자 관련 요청을 처리하는 controller
 import { Request, Response } from 'express';
+import { JwtPayload } from 'jsonwebtoken';
 import {
   googleSignUpService,
   googleLoginService,
@@ -145,9 +146,15 @@ export const nicknameController = {
   register: async (req: Request, res: Response) => {
     try {
       const { userID } = req.params;
+      const tokenUserID = (req.user as JwtPayload).userId;
       const { nickname } = req.body;
 
       const parsedUserID = parseInt(userID, 10);
+
+      // 접근권한이 없는 경우 403 코드 리턴함
+      if (parsedUserID !== Number(tokenUserID)) {
+        return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
+      }
 
       // 요청 구문이 잘못된 경우 400 코드 리턴함
       if (isNaN(parsedUserID) || typeof nickname !== 'string' || !nickname) {
@@ -192,9 +199,15 @@ export const nicknameController = {
   update: async (req: Request, res: Response) => {
     try {
       const { userID } = req.params;
+      const tokenUserID = (req.user as JwtPayload).userId;
       const { nickname } = req.body;
 
       const parsedUserID = parseInt(userID, 10);
+
+      // 접근권한이 없는 경우 403 코드 리턴함
+      if (parsedUserID !== Number(tokenUserID)) {
+        return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
+      }
 
       // 요청 구문이 잘못된 경우 400 코드 리턴함
       if (isNaN(parsedUserID) || typeof nickname !== 'string' || !nickname) {
