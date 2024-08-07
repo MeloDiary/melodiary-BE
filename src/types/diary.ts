@@ -1,5 +1,3 @@
-import { RowDataPacket } from 'mysql2';
-
 export interface IDiary {
   id: number;
   title: string;
