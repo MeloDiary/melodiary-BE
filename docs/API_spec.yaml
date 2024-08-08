@@ -2205,13 +2205,13 @@ paths:
                 example:
                   message: 'There is something wrong with the server'
 
-  /api/diaries/calendar/{mateID}:
+  /api/diaries/calendar/:
     get:
       tags:
         - diary
       summary: 월별 일기 목록 조회
       description: |
-        조회하고자 하는 달을 'YYYY-MM' 형식으로 쿼리에 담아 요청해야 합니다.
+        유저ID와 'YYYY-MM' 형식의 조회하고자 하는 달을 쿼리에 담아 요청해야 합니다.
 
         유저의 월별 일기 목록 조회에 성공한 경우 200코드와 일기 목록을 리턴합니다.
 
@@ -2225,7 +2225,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/MateID'
+        - $ref: '#/components/parameters/UserID_Query'
         - $ref: '#/components/parameters/Month'
 
       responses:
@@ -2725,7 +2725,7 @@ paths:
                 example:
                   message: 'There is something wrong with the server'
   /api/weather:
-    post:
+    get:
       tags:
         - weather
       summary: 오늘의 날씨정보 조회
@@ -2738,13 +2738,9 @@ paths:
 
         그 이외의 경우 500 코드를 리턴합니다.
 
-      requestBody:
-        description: 현재 위치 정보
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LocationInfo'
-        required: true
+      parameters:
+        - $ref: '#/components/parameters/Latitude'
+        - $ref: '#/components/parameters/Longitude'
 
       responses:
         '200':
@@ -3308,6 +3304,14 @@ components:
         type: integer
         example: 2764
 
+    UserID_Query:
+      name: userID
+      in: query
+      required: true
+      schema:
+        type: integer
+        example: 2764
+
     MateID:
       name: mateID
       in: path
@@ -3370,3 +3374,21 @@ components:
       schema:
         type: string
         example: '2024-07'
+
+    Longitude:
+      name: longitude
+      in: query
+      description: 경도
+      required: true
+      schema:
+        type: string
+        example: '111.111'
+
+    Latitude:
+      name: latitude
+      in: query
+      description: 위도
+      required: true
+      schema:
+        type: string
+        example: '222.222'
