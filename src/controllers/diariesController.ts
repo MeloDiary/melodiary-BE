@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 //import { StatusCodes } from 'http-status-codes';
 import dbPool from '../config/dbConfig.js';
 import { IPostDiary } from '../types/diary';
-import { JwtPayload } from 'jsonwebtoken';
 
 export const postDiary = async (req: Request, res: Response) => {
   try {
@@ -19,7 +18,8 @@ export const postDiary = async (req: Request, res: Response) => {
       weather
     }: IPostDiary = req.body;
 
-    const { userId } = req.user as JwtPayload;
+    const userId = 20;
+    //const { userId } = req.user as JwtPayload;
 
     // diary 테이블에 데이터 삽입
     const diaryQuery = `INSERT INTO diary (title, content, user_id, mood, emoji, privacy, background_color) 
@@ -47,7 +47,7 @@ export const postDiary = async (req: Request, res: Response) => {
 
       await dbPool.execute(musicQuery, [
         diaryId,
-        music.musicUrl,
+        music.url,
         music.title,
         music.artist
       ]);
@@ -64,7 +64,7 @@ export const postDiary = async (req: Request, res: Response) => {
         diaryId,
         weather.location,
         weather.icon,
-        weather.avgTemperature
+        weather.avg_temperature
       ]);
     }
 
@@ -97,10 +97,10 @@ export const putDiary = async (req: Request, res: Response) => {
       weather
     }: //img_urls
     IPostDiary = req.body;
-    const { userId } = req.user as JwtPayload;
-
+    const userId = 20;
+    //const { userId } = req.user as JwtPayload;
     // 수정하려는 일기의 유저 ID와 현재 유저 ID를 비교한 후, 다르면 403(권한없음) 에러를 리턴합니다.
-    const checkQuery = `SELECT diary WHERE id = ? AND user_id= ?`;
+    const checkQuery = `SELECT * FROM diary WHERE id = ? AND user_id= ?`;
     const [checkRows] = await dbPool.execute<RowDataPacket[]>(checkQuery, [
       diaryId,
       userId
@@ -110,23 +110,23 @@ export const putDiary = async (req: Request, res: Response) => {
         .status(403)
         .json({ message: 'No permission to access the diary' });
     }
-
+    console.log('1');
     // Update the diary table
     const diaryQuery = `
       UPDATE diary 
-      SET title = ?, content = ?, user_id = ?, mood = ?, emoji = ?, privacy = ?, background_color = ?
+      SET title = ?, content = ?, mood = ?, emoji = ?, privacy = ?, background_color = ?
       WHERE id = ?`;
 
     await dbPool.execute<ResultSetHeader>(diaryQuery, [
       title,
       content,
-      userId,
       mood,
       emoji,
       privacy,
       background_color,
       diaryId
     ]);
+    console.log('2');
 
     // Update or insert into the music table
     if (music) {
@@ -137,11 +137,12 @@ export const putDiary = async (req: Request, res: Response) => {
 
       await dbPool.execute(musicQuery, [
         diaryId,
-        music.musicUrl,
+        music.url,
         music.title,
         music.artist
       ]);
     }
+    console.log('3');
 
     // Update or insert into the weather table
     if (weather) {
@@ -154,9 +155,10 @@ export const putDiary = async (req: Request, res: Response) => {
         diaryId,
         weather.location,
         weather.icon,
-        weather.avgTemperature
+        weather.avg_temperature
       ]);
     }
+    console.log('4');
 
     //이미지 수정 부분은 우선 제외
 
@@ -173,10 +175,11 @@ export const deleteDiary = async (req: Request, res: Response) => {
   try {
     const diaryId = parseInt(req.params.diaryId, 10);
 
-    const { userId } = req.user as JwtPayload;
+    const userId = 20;
+    //const { userId } = req.user as JwtPayload;
 
     // 수정하려는 일기의 유저 ID와 현재 유저 ID를 비교한 후, 다르면 403(권한없음) 에러를 리턴합니다.
-    const checkQuery = `SELECT diary WHERE id = ? AND user_id= ?`;
+    const checkQuery = `SELECT * FROM diary WHERE id = ? AND user_id= ?`;
     const [checkRows] = await dbPool.execute<RowDataPacket[]>(checkQuery, [
       diaryId,
       userId
@@ -218,6 +221,9 @@ export const deleteDiary = async (req: Request, res: Response) => {
 export const getDiary = async (req: Request, res: Response) => {
   try {
     const diaryId = parseInt(req.params.diaryId, 10);
+
+    const userId = 20;
+    //const { userId } = req.user as JwtPayload;
 
     // Retrieve diary entry
     const diaryQuery = `
@@ -306,7 +312,8 @@ export const getDiary = async (req: Request, res: Response) => {
 
 export const getLike = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.user as JwtPayload;
+    const userId = 20;
+    //const { userId } = req.user as JwtPayload;
     const { diaryId } = req.params;
 
     // diary 테이블에 데이터 삽입
@@ -327,10 +334,12 @@ export const getLike = async (req: Request, res: Response) => {
     res.status(500).send('There is something wrong with the server');
   }
 };
+
+//한번만 되게 변경해야함.
 export const postLike = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.user as JwtPayload;
-
+    const userId = 20;
+    //const { userId } = req.user as JwtPayload;
     const { diaryId } = req.params;
 
     // diary 테이블에 데이터 삽입
@@ -353,7 +362,8 @@ export const postLike = async (req: Request, res: Response) => {
 };
 export const deleteLike = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.user as JwtPayload;
+    const userId = 20;
+    //const { userId } = req.user as JwtPayload;
     const { diaryId } = req.params;
 
     // diary 테이블에 데이터 삽입
