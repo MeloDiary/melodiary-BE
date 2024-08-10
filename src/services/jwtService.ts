@@ -7,7 +7,7 @@ import redisClient from '../config/redisConfig.js';
  * @param payload - Access token의 payload에 포함할 내용을 담은 객체
  * @returns 서명된 acess token
  */
-export const generateAccessToken = (payload: object): string => {
+export const generateAccessToken = async (payload: object): Promise<string> => {
   try {
     const jwtSecret: Secret = process.env.JWT_SECRET as string;
     const jwtExpiresIn: string = process.env.JWT_EXPIRES_IN || '1h';
@@ -27,7 +27,9 @@ export const generateAccessToken = (payload: object): string => {
  * @param payload - Refresh token의 payload에 포함할 내용을 담은 객체
  * @returns 서명된 refresh token
  */
-export const generateRefreshToken = (payload: object): string => {
+export const generateRefreshToken = async (
+  payload: object
+): Promise<string> => {
   try {
     const jwtRefreshExpiresIn: string =
       process.env.JWT_REFRESH_EXPIRES_IN || '7d';
@@ -85,7 +87,8 @@ export const deleteJWTInRedis = async (userId: number): Promise<void> => {
 /**
  * Access token을 검증하는 함수입니다.
  * @param token - 검증할 access token
- * @returns The decoded token payload if verification is successful
+ * @returns 디코딩된 access token
+ * @throws Access token이 유효하지 않거나 만료된 경우
  */
 export const verifyAccessToken = async (token: string): Promise<object> => {
   try {
@@ -100,8 +103,8 @@ export const verifyAccessToken = async (token: string): Promise<object> => {
 /**
  * Refresh token을 검증하는 함수입니다.
  * @param token - 검증할 refresh token
- * @returns The decoded token payload if verification is successful
- * @throws If the token is invalid or expired
+ * @returns 디코딩된 refresh token
+ * @throws Refresh token이 유효하지 않거나 만료된 경우
  */
 export const verifyRefreshToken = async (token: string): Promise<object> => {
   try {

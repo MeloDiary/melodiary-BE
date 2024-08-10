@@ -26,9 +26,10 @@ app.use(
     origin: [
       'http://localhost:3000',
       'https://melodiary.site',
+      'https://www.melodiary.site',
       'https://melo-diary.vercel.app'
     ],
-    methods: 'GET, POST, PUT, DELETE',
+    methods: 'GET, POST, PUT, DELETE, OPTIONS',
     credentials: true
   })
 );
