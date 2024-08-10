@@ -2,14 +2,16 @@
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { IAuthRequest } from '../types/user';
+import { IAuthRequest, IUser, IUserInfo } from '../types/user';
 import {
   deleteJWTInRedis,
   generateAccessToken,
   generateRefreshToken,
-  storeJWTInRedis
+  storeJWTInRedis,
+  verifyRefreshToken
 } from './jwtService.js';
 import User from '../models/userModel.js';
+import redisClient from '../config/redisConfig.js';
 
 // Google 회원가입 service
 export const googleSignUpService = async (
@@ -62,11 +64,11 @@ export const googleSignUpService = async (
     }
 
     // 사용자의 ID와 email 주소를 payload에 넣어서 JWT 발급
-    const accessToken = generateAccessToken({
+    const accessToken = await generateAccessToken({
       userId: userId,
       email: userEmail
     });
-    const refreshToken = generateRefreshToken({
+    const refreshToken = await generateRefreshToken({
       userId: userId,
       email: userEmail
     });
@@ -124,11 +126,11 @@ export const googleLoginService = async (
     }
 
     // 사용자의 ID와 email 주소를 payload에 넣어서 JWT 발급
-    const accessToken = generateAccessToken({
+    const accessToken = await generateAccessToken({
       userId: userId,
       email: userEmail
     });
-    const refreshToken = generateRefreshToken({
+    const refreshToken = await generateRefreshToken({
       userId: userId,
       email: userEmail
     });
@@ -213,11 +215,11 @@ export const naverSignUpService = async (
     }
 
     // 사용자의 ID와 email 주소를 payload에 넣어서 JWT 발급
-    const accessToken = generateAccessToken({
+    const accessToken = await generateAccessToken({
       userId: userId,
       email: userEmail
     });
-    const refreshToken = generateRefreshToken({
+    const refreshToken = await generateRefreshToken({
       userId: userId,
       email: userEmail
     });
@@ -292,11 +294,11 @@ export const naverLoginService = async (
     }
 
     // 사용자의 ID와 email 주소를 payload에 넣어서 JWT 발급
-    const accessToken = generateAccessToken({
+    const accessToken = await generateAccessToken({
       userId: userId,
       email: userEmail
     });
-    const refreshToken = generateRefreshToken({
+    const refreshToken = await generateRefreshToken({
       userId: userId,
       email: userEmail
     });
@@ -317,28 +319,205 @@ export const naverLoginService = async (
 export const checkNicknameService = async (
   nickname: string
 ): Promise<number | null> => {
-  const result: number | null = await User.isNicknameExists(nickname);
+  try {
+    const result: number | null = await User.isUserExistsByNickname(nickname);
 
-  return result;
+    return result;
+  } catch (error) {
+    throw error;
+  }
 };
 
 // 사용자 가입여부 확인 service
 export const checkUserService = async (
   userID: number
 ): Promise<number | null> => {
-  const result: number | null = await User.isUserExistsById(userID);
+  try {
+    const result: number | null = await User.isUserExistsById(userID);
 
-  return result;
+    return result;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// 닉네임 등록 service
+// 닉네임 등록, 변경 service
 export const registerNicknameService = async (
   userID: number,
   nickname: string
 ): Promise<number> => {
-  const result: number = await User.updateUserNickname(userID, nickname);
+  try {
+    const result: number = await User.updateUserNickname(userID, nickname);
 
-  return result;
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 사용자 검색 service
+export const searchUserService = async (
+  nickname: string,
+  email: string
+): Promise<IUser> => {
+  try {
+    let userID: number | null;
+
+    if (!nickname) {
+      userID = await User.isUserExistsByEmail(email);
+    } else {
+      userID = await User.isUserExistsByNickname(nickname);
+    }
+
+    if (!userID) {
+      throw new Error('Not found such user');
+    }
+
+    const searchedUserInfo = await User.getUserById(userID);
+
+    return searchedUserInfo as IUser;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 사용자 정보 확인 service
+export const userInfoService = async (userID: number): Promise<IUserInfo> => {
+  try {
+    const result = await User.getUserInfoById(userID);
+
+    if (!result) {
+      throw new Error('Not found such user');
+    }
+
+    const userInfo: IUserInfo = {
+      id: result.id,
+      profileImgURL: result.profile_img_url,
+      profileBackgroundImgURL: result.profile_background_img_url,
+      nickname: result.nickname,
+      email: result.email,
+      mateCnt: result.mate_count,
+      diaryCnt: result.diary_count
+    };
+
+    return userInfo;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 회원 탈퇴 service
+export const deleteUserService = async (userID: number): Promise<number> => {
+  try {
+    const result = await User.deleteUserById(userID);
+
+    if (!result) {
+      throw new Error('Not found such user');
+    }
+
+    // Redis에 저장된 JWT 삭제
+    await deleteJWTInRedis(userID);
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 프로필 사진 등록, 변경 service
+export const registerProfileImgService = async (
+  userID: number,
+  imgURL: string
+): Promise<number> => {
+  try {
+    const result: number = await User.updateUserProfileImg(userID, imgURL);
+
+    if (!result) {
+      throw new Error('Not found such user');
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 마이페이지 배경 사진 등록, 변경 service
+export const registerBackgroundImgService = async (
+  userID: number,
+  imgURL: string
+): Promise<number> => {
+  try {
+    const result: number = await User.updateUserBackgroundImg(userID, imgURL);
+
+    if (!result) {
+      throw new Error('Not found such user');
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 로그아웃 service
+export const logoutService = async (userID: number): Promise<void> => {
+  try {
+    // Redis에 저장된 JWT 삭제
+    await deleteJWTInRedis(userID);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Access token 재발급 service
+export const tokenRefreshService = async (
+  userID: number,
+  refreshToken: string
+): Promise<{ userId: number; accessToken: string; refreshToken: string }> => {
+  try {
+    // Refresh token 검증
+    await verifyRefreshToken(refreshToken);
+
+    // Redis에 해당 token이 있는지 확인
+    const storedToken = await redisClient.hGetAll(String(userID));
+
+    if (!storedToken || storedToken.refreshToken !== refreshToken) {
+      throw new Error('Invalid or expired refresh token');
+    }
+
+    const result = await User.getUserById(userID);
+
+    if (!result) {
+      throw new Error('Not found such user');
+    }
+
+    const userEmail = result.email;
+
+    // 사용자의 ID와 email 주소를 payload에 넣어서 JWT 발급
+    const newAccessToken = await generateAccessToken({
+      userId: userID,
+      email: userEmail
+    });
+    const newRefreshToken = await generateRefreshToken({
+      userId: userID,
+      email: userEmail
+    });
+
+    // 사용자의 기존 JWT 삭제
+    await deleteJWTInRedis(userID);
+    // 사용자의 ID와 새로 발급된 JWT를 Redis에 저장
+    await storeJWTInRedis(userID, newAccessToken, newRefreshToken);
+
+    return {
+      userId: userID,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken
+    };
+  } catch (error) {
+    console.error('Error in access token reissue', error.message);
+    throw error;
+  }
 };
 
 // // Kakao 회원가입 service

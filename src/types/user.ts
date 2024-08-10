@@ -7,6 +7,16 @@ export interface IUser {
   createdAt: Date;
 }
 
+export interface IUserInfo {
+  id: number;
+  profileImgURL: string | null;
+  profileBackgroundImgURL: string | null;
+  nickname: string;
+  email: string;
+  mateCnt: number;
+  diaryCnt: number;
+}
+
 export interface IAuthRequest {
   serviceProvider: 'google' | 'naver' | 'kakao';
   authorizationCode: string;

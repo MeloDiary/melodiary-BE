@@ -8,8 +8,16 @@ import {
   naverLoginService,
   checkNicknameService,
   checkUserService,
-  registerNicknameService
+  registerNicknameService,
+  searchUserService,
+  userInfoService,
+  deleteUserService,
+  registerProfileImgService,
+  registerBackgroundImgService,
+  logoutService,
+  tokenRefreshService
 } from '../services/userService.js';
+import { IUserInfo } from '../types/user.js';
 
 //회원가입 controller
 export const signUpController = async (req: Request, res: Response) => {
@@ -34,7 +42,11 @@ export const signUpController = async (req: Request, res: Response) => {
       });
 
       // 회원가입 성공한 경우 201 코드와 id, access token, refresh token 리턴함
-      return res.status(201).json(result);
+      return res.status(201).json({
+        user_id: result.userId,
+        access_token: result.accessToken,
+        refresh_token: result.refreshToken
+      });
     }
 
     // Naver 회원가입 service 호출
@@ -45,7 +57,11 @@ export const signUpController = async (req: Request, res: Response) => {
         state
       });
 
-      return res.status(201).json(result);
+      return res.status(201).json({
+        user_id: result.userId,
+        access_token: result.accessToken,
+        refresh_token: result.refreshToken
+      });
     }
 
     // Kakao 회원가입 service 호출
@@ -86,7 +102,11 @@ export const loginController = async (req: Request, res: Response) => {
       });
 
       // 로그인 성공한 경우 200 코드와 id, access token, refresh token 리턴함
-      return res.status(200).json(result);
+      return res.status(200).json({
+        user_id: result.userId,
+        access_token: result.accessToken,
+        refresh_token: result.refreshToken
+      });
     }
 
     // Naver 로그인 service 호출
@@ -98,7 +118,11 @@ export const loginController = async (req: Request, res: Response) => {
       });
 
       // 로그인 성공한 경우 200 코드와 id, access token, refresh token 리턴함
-      return res.status(200).json(result);
+      return res.status(200).json({
+        user_id: result.userId,
+        access_token: result.accessToken,
+        refresh_token: result.refreshToken
+      });
     }
 
     // Kakao 로그인 service 호출
@@ -114,51 +138,51 @@ export const loginController = async (req: Request, res: Response) => {
   }
 };
 
+// 닉네임 중복확인 controller
+export const checkNicknameController = async (req: Request, res: Response) => {
+  try {
+    const { nickname } = req.query;
+
+    // 요청 구문이 잘못된 경우 400 코드 리턴함
+    if (typeof nickname !== 'string' || !nickname) {
+      return res.status(400).json({ message: 'Bad request' });
+    }
+
+    // 해당 닉네임을 쓰고 있는 사용자가 있는지 확인함
+    const nicknameUserID = await checkNicknameService(nickname);
+    console.log(nicknameUserID);
+
+    if (nicknameUserID === null) {
+      // 해당 닉네임을 쓰고 있는 사용자가 없는 경우 200 코드 리턴함
+      return res.status(200).json({ message: 'The nickname is valid' });
+    } else {
+      // 해당 닉네임을 쓰고 있는 사용자가 있는 경우 409 코드 리턴함
+      return res.status(409).json({ message: 'The nickname is duplicated' });
+    }
+  } catch (error) {
+    // 서버 내부 오류인 경우 500 코드 리턴함
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // 닉네임 관련 controller
 export const nicknameController = {
-  // 닉네임 중복확인 controller
-  check: async (req: Request, res: Response) => {
-    try {
-      const { nickname } = req.query;
-
-      // 요청 구문이 잘못된 경우 400 코드 리턴함
-      if (typeof nickname !== 'string' || !nickname) {
-        return res.status(400).json({ message: 'Bad request' });
-      }
-
-      // 해당 닉네임을 쓰고 있는 사용자가 있는지 확인함
-      const nicknameUserID = await checkNicknameService(nickname);
-      console.log(nicknameUserID);
-
-      if (nicknameUserID === null) {
-        // 해당 닉네임을 쓰고 있는 사용자가 없는 경우 200 코드 리턴함
-        return res.status(200).json({ message: 'The nickname is valid' });
-      } else {
-        // 해당 닉네임을 쓰고 있는 사용자가 있는 경우 409 코드 리턴함
-        return res.status(409).json({ message: 'The nickname is duplicated' });
-      }
-    } catch (error) {
-      // 서버 내부 오류인 경우 500 코드 리턴함
-      return res.status(500).json({ message: 'Internal server error' });
-    }
-  },
   // 닉네임 등록 controller
   register: async (req: Request, res: Response) => {
     try {
       const { userID } = req.params;
       const tokenUserID = (req.user as JwtPayload).userId;
       const { nickname } = req.body;
-
       const parsedUserID = parseInt(userID, 10);
-
-      // 접근권한이 없는 경우 403 코드 리턴함
-      if (parsedUserID !== Number(tokenUserID)) {
-        return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
-      }
 
       // 요청 구문이 잘못된 경우 400 코드 리턴함
       if (isNaN(parsedUserID) || typeof nickname !== 'string' || !nickname) {
         return res.status(400).json({ message: 'Bad request' });
+      }
+
+      // 접근권한이 없는 경우 403 코드 리턴함
+      if (parsedUserID !== Number(tokenUserID)) {
+        return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
       }
 
       // 해당 닉네임을 쓰고 있는 사용자가 있는지 확인함
@@ -201,17 +225,16 @@ export const nicknameController = {
       const { userID } = req.params;
       const tokenUserID = (req.user as JwtPayload).userId;
       const { nickname } = req.body;
-
       const parsedUserID = parseInt(userID, 10);
-
-      // 접근권한이 없는 경우 403 코드 리턴함
-      if (parsedUserID !== Number(tokenUserID)) {
-        return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
-      }
 
       // 요청 구문이 잘못된 경우 400 코드 리턴함
       if (isNaN(parsedUserID) || typeof nickname !== 'string' || !nickname) {
         return res.status(400).json({ message: 'Bad request' });
+      }
+
+      // 접근권한이 없는 경우 403 코드 리턴함
+      if (parsedUserID !== Number(tokenUserID)) {
+        return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
       }
 
       // 해당 닉네임을 쓰고 있는 사용자가 있는지 확인함
@@ -247,5 +270,307 @@ export const nicknameController = {
       // 서버 내부 오류인 경우 500 코드 리턴함
       return res.status(500).json({ message: 'Internal server error' });
     }
+  }
+};
+
+// 사용자 검색 controller
+export const searchUserController = async (req: Request, res: Response) => {
+  try {
+    const { nickname: nicknameQuery, email: emailQuery } = req.query;
+
+    if (
+      (typeof nicknameQuery !== 'string' || !nicknameQuery.trim()) &&
+      (typeof emailQuery !== 'string' || !emailQuery.trim())
+    ) {
+      // 요청 구문이 잘못된 경우 400 코드 리턴함
+      return res.status(400).json({ message: 'Bad request' });
+    }
+
+    const { id, nickname, profileImgURL } = await searchUserService(
+      nicknameQuery as string,
+      emailQuery as string
+    );
+
+    // 사용자 검색에 성공한 경우 200 코드와 사용자 정보 리턴함
+    return res.status(200).json({
+      user_id: id,
+      nickname: nickname,
+      profile_img_url: profileImgURL ?? null
+    });
+  } catch (error) {
+    // 존재하지 않는 사용자인 경우 404 코드 리턴함
+    if (error.message === 'Not found such user') {
+      return res.status(404).json({ message: 'Not found such user' });
+    }
+    // 서버 내부 오류인 경우 500 코드 리턴함
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// 사용자 정보 확인 controller
+export const userInfoController = async (req: Request, res: Response) => {
+  try {
+    const { userID } = req.params;
+    const tokenUserID = (req.user as JwtPayload).userId;
+    const parsedUserID = parseInt(userID, 10);
+
+    // 요청 구문이 잘못된 경우 400 코드 리턴함
+    if (isNaN(parsedUserID)) {
+      return res.status(400).json({ message: 'Bad request' });
+    }
+
+    // 접근권한이 없는 경우 403 코드 리턴함
+    if (parsedUserID !== Number(tokenUserID)) {
+      return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
+    }
+
+    const result: IUserInfo = await userInfoService(parsedUserID);
+
+    // 사용자 정보를 가져오는데 성공한 경우 200 코드와 사용자 정보 리턴함
+    return res.status(200).json({
+      user_id: result.id,
+      profile_img_url: result.profileImgURL ?? null,
+      profile_background_img_url: result.profileBackgroundImgURL ?? null,
+      nickname: result.nickname,
+      email_address: result.email,
+      mate_count: result.mateCnt ?? 0,
+      diary_count: result.diaryCnt ?? 0
+    });
+  } catch (error) {
+    // 존재하지 않는 사용자인 경우 404 코드 리턴함
+    if (error.message === 'Not found such user') {
+      return res.status(404).json({ message: 'Not found such user' });
+    }
+    // 서버 내부 오류인 경우 500 코드 리턴함
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// 회원 탈퇴 controller
+export const deleteUserController = async (req: Request, res: Response) => {
+  try {
+    const { userID } = req.params;
+    const tokenUserID = (req.user as JwtPayload).userId;
+    const parsedUserID = parseInt(userID, 10);
+
+    // 요청 구문이 잘못된 경우 400 코드 리턴함
+    if (isNaN(parsedUserID)) {
+      return res.status(400).json({ message: 'Bad request' });
+    }
+
+    // 접근권한이 없는 경우 403 코드 리턴함
+    if (parsedUserID !== Number(tokenUserID)) {
+      return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
+    }
+
+    const affectedRows = await deleteUserService(parsedUserID);
+
+    // 회원 탈퇴 및 사용자 삭제에 성공한 경우 200 코드 리턴함
+    if (affectedRows > 0) {
+      return res.status(200).json({ message: 'The user has deleted' });
+    } else {
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  } catch (error) {
+    // 존재하지 않는 사용자인 경우 404 코드 리턴함
+    if (error.message === 'Not found such user') {
+      return res.status(404).json({ message: 'Not found such user' });
+    }
+    // 서버 내부 오류인 경우 500 코드 리턴함
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// 프로필 사진 관련 controller
+export const profileImgController = {
+  // 메인 controller
+  handleProfileImg: async (
+    req: Request,
+    res: Response,
+    action: 'register' | 'update'
+  ) => {
+    try {
+      const { userID } = req.params;
+      const tokenUserID = (req.user as JwtPayload).userId;
+      const { img_url: imgURL } = req.body;
+      const parsedUserID = parseInt(userID, 10);
+
+      // 요청 구문이 잘못된 경우 400 코드 리턴함
+      if (isNaN(parsedUserID) || typeof imgURL !== 'string' || !imgURL) {
+        return res.status(400).json({ message: 'Bad request' });
+      }
+
+      // 접근권한이 없는 경우 403 코드 리턴함
+      if (parsedUserID !== Number(tokenUserID)) {
+        return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
+      }
+
+      const affectedRows = await registerProfileImgService(
+        parsedUserID,
+        imgURL
+      );
+
+      // 프로필 사진 등록에 성공한 경우 201 코드, 프로필 사진 변경에 성공한 경우 200 코드 리턴함
+      if (affectedRows > 0) {
+        const successMessage =
+          action === 'register'
+            ? 'Successfully posted the profile image'
+            : 'Successfully changed the profile image';
+
+        return res
+          .status(action === 'register' ? 201 : 200)
+          .json({ message: successMessage });
+      } else {
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+    } catch (error) {
+      // 존재하지 않는 사용자인 경우 404 코드 리턴함
+      if (error.message === 'Not found such user') {
+        return res.status(404).json({ message: 'Not found such user' });
+      }
+      // 서버 내부 오류인 경우 500 코드 리턴함
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+
+  // 프로필 사진 등록 controller
+  register: async (req: Request, res: Response) => {
+    return profileImgController.handleProfileImg(req, res, 'register');
+  },
+
+  // 프로필 사진 변경 controller
+  update: async (req: Request, res: Response) => {
+    return profileImgController.handleProfileImg(req, res, 'update');
+  }
+};
+
+// 마이페이지 배경 사진 관련 controller
+export const backgroundImgController = {
+  // 메인 controller
+  handleBackgroundImg: async (
+    req: Request,
+    res: Response,
+    action: 'register' | 'update'
+  ) => {
+    try {
+      const { userID } = req.params;
+      const tokenUserID = (req.user as JwtPayload).userId;
+      const { img_url: imgURL } = req.body;
+      const parsedUserID = parseInt(userID, 10);
+
+      // 요청 구문이 잘못된 경우 400 코드 리턴함
+      if (isNaN(parsedUserID) || typeof imgURL !== 'string' || !imgURL) {
+        return res.status(400).json({ message: 'Bad request' });
+      }
+
+      // 접근권한이 없는 경우 403 코드 리턴함
+      if (parsedUserID !== Number(tokenUserID)) {
+        return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
+      }
+
+      const affectedRows = await registerBackgroundImgService(
+        parsedUserID,
+        imgURL
+      );
+
+      // 마이페이지 배경 사진 등록에 성공한 경우 201 코드, 프로필 사진 변경에 성공한 경우 200 코드 리턴함
+      if (affectedRows > 0) {
+        const successMessage =
+          action === 'register'
+            ? 'Successfully posted the profile background image'
+            : 'Successfully changed the profile background image';
+
+        return res
+          .status(action === 'register' ? 201 : 200)
+          .json({ message: successMessage });
+      } else {
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+    } catch (error) {
+      // 존재하지 않는 사용자인 경우 404 코드 리턴함
+      if (error.message === 'Not found such user') {
+        return res.status(404).json({ message: 'Not found such user' });
+      }
+      // 서버 내부 오류인 경우 500 코드 리턴함
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+
+  // 마이페이지 배경 사진 등록 controller
+  register: async (req: Request, res: Response) => {
+    return backgroundImgController.handleBackgroundImg(req, res, 'register');
+  },
+
+  // 마이페이지 배경 사진 변경 controller
+  update: async (req: Request, res: Response) => {
+    return backgroundImgController.handleBackgroundImg(req, res, 'update');
+  }
+};
+
+// 로그아웃 controller
+export const logoutController = async (req: Request, res: Response) => {
+  try {
+    const { userID } = req.params;
+    const tokenUserID = (req.user as JwtPayload).userId;
+    const parsedUserID = parseInt(userID, 10);
+
+    // 요청 구문이 잘못된 경우 400 코드 리턴함
+    if (isNaN(parsedUserID)) {
+      return res.status(400).json({ message: 'Bad request' });
+    }
+
+    // 접근권한이 없는 경우 403 코드 리턴함
+    if (parsedUserID !== Number(tokenUserID)) {
+      return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
+    }
+
+    await logoutService(parsedUserID);
+
+    // 로그아웃에 성공한 경우 200 코드 리턴함
+    return res.status(200).json({ message: 'Successfully log out' });
+  } catch (error) {
+    // 존재하지 않는 사용자인 경우 404 코드 리턴함
+    if (error.message === 'Not found such user') {
+      return res.status(404).json({ message: 'Not found such user' });
+    }
+    // 서버 내부 오류인 경우 500 코드 리턴함
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Access token 재발급 controller
+export const tokenRefreshController = async (req: Request, res: Response) => {
+  try {
+    const { userID } = req.params;
+    const parsedUserID = parseInt(userID, 10);
+    const { refresh_token: refreshToken } = req.body;
+
+    // 요청 구문이 잘못된 경우 400 코드 리턴함
+    if (!refreshToken) {
+      return res.status(400).json({ message: 'Bad request' });
+    }
+
+    const result = await tokenRefreshService(parsedUserID, refreshToken);
+
+    // Access token 재발급에 성공한 경우 200 코드와 재발급된 JWT 리턴함
+    return res.status(200).json({
+      user_id: result.userId,
+      access_token: result.accessToken,
+      refresh_token: result.refreshToken
+    });
+  } catch (error) {
+    // Refresh token이 만료된 경우 401 코드 리턴함
+    if (error.message === 'Invalid or expired refresh token') {
+      return res
+        .status(401)
+        .json({ message: 'Invalid or expired refresh token' });
+    }
+    // 존재하지 않는 사용자인 경우 404 코드 리턴함
+    if (error.message === 'Not found such user') {
+      return res.status(404).json({ message: 'Not found such user' });
+    }
+
+    // 서버 내부 오류인 경우 500 코드 리턴함
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };

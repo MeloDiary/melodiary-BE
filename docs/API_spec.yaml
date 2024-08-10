@@ -151,6 +151,8 @@ paths:
 
         사용자 정보를 가져오는데 성공한 경우 200 코드와 사용자의 정보를 리턴합니다.
 
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
         다른 사용자의 정보에 접근하는 경우 403 코드를 리턴합니다.
@@ -169,6 +171,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserInfo'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -214,6 +225,8 @@ paths:
 
         회원 탈퇴 처리가 성공한 경우 200 코드를 리턴합니다.
 
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
         다른 사용자의 정보에 접근하는 경우 403 코드를 리턴합니다.
@@ -235,6 +248,15 @@ paths:
                   - $ref: '#/components/schemas/Message'
                 example:
                   message: 'The user has deleted'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -529,7 +551,7 @@ paths:
 
         프로필 사진 등록에 성공한 경우 201 코드를 리턴합니다.
 
-        요청의 이미지 URL이 유효하지 않은 경우 400 코드를 리턴합니다.
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
 
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
@@ -558,16 +580,16 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/Message'
                 example:
-                  message: 'Successfully changed the profile image'
+                  message: 'Successfully posted the profile image'
         '400':
-          description: 유효하지 않은 이미지 URL
+          description: 잘못된 요청
           content:
             applicaiton/json:
               schema:
                 allOf:
                   - $ref: '#/components/schemas/Message'
                 example:
-                  message: 'The URL is invalid'
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -613,13 +635,13 @@ paths:
 
         프로필 사진 변경에 성공한 경우 200 코드를 리턴합니다.
 
-        요청의 이미지 URL이 유효하지 않은 경우 400 코드를 리턴합니다.
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
 
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
         다른 사용자의 정보에 접근하는 경우 403 코드를 리턴합니다.
 
-        기존에 등록된 프로필 사진이 없는 경우 404 코드를 리턴합니다.
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
 
         그 이외의 경우 500 코드를 리턴합니다.
       security:
@@ -644,14 +666,14 @@ paths:
                 example:
                   message: 'Successfully changed the profile image'
         '400':
-          description: 유효하지 않은 이미지 URL
+          description: 잘못된 요청
           content:
             applicaiton/json:
               schema:
                 allOf:
                   - $ref: '#/components/schemas/Message'
                 example:
-                  message: 'The URL is invalid'
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -671,14 +693,14 @@ paths:
                 example:
                   message: 'Forbidden: User ID mismatch'
         '404':
-          description: 기존에 등록된 프로필 사진이 없음
+          description: 존재하지 않는 사용자
           content:
             application/json:
               schema:
                 allOf:
                   - $ref: '#/components/schemas/Message'
                 example:
-                  message: 'Not found existed profile image'
+                  message: 'Not found such user'
         '500':
           description: 내부 서버 에러
           content:
@@ -699,7 +721,7 @@ paths:
 
         마이페이지 배경 사진 등록에 성공한 경우 200 코드를 리턴합니다.
 
-        요청의 이미지 URL이 유효하지 않은 경우 400 코드를 리턴합니다.
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
 
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
@@ -728,16 +750,16 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/Message'
                 example:
-                  message: 'Successfully changed the profile image'
+                  message: 'Successfully posted the profile background image'
         '400':
-          description: 유효하지 않은 이미지 URL
+          description: 잘못된 요청
           content:
             applicaiton/json:
               schema:
                 allOf:
                   - $ref: '#/components/schemas/Message'
                 example:
-                  message: 'The URL is invalid'
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -783,13 +805,13 @@ paths:
 
         마이페이지 배경 사진 변경에 성공한 경우 200 코드를 리턴합니다.
 
-        요청의 이미지 URL이 유효하지 않은 경우 400 코드를 리턴합니다.
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
 
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
         다른 사용자의 정보에 접근하는 경우 403 코드를 리턴합니다.
 
-        기존에 등록된 마이페이지 배경 사진이 없는 경우 404 코드를 리턴합니다.
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
 
         그 이외의 경우 500 코드를 리턴합니다.
       security:
@@ -812,16 +834,16 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/Message'
                 example:
-                  message: 'Successfully changed the profile image'
+                  message: 'Successfully changed the profile background image'
         '400':
-          description: 유효하지 않은 이미지 URL
+          description: 잘못된 요청
           content:
             applicaiton/json:
               schema:
                 allOf:
                   - $ref: '#/components/schemas/Message'
                 example:
-                  message: 'The URL is invalid'
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -841,14 +863,14 @@ paths:
                 example:
                   message: 'Forbidden: User ID mismatch'
         '404':
-          description: 기존에 등록된 마이페이지 배경 사진이 없음
+          description: 존재하지 않는 사용자
           content:
             application/json:
               schema:
                 allOf:
                   - $ref: '#/components/schemas/Message'
                 example:
-                  message: 'Not found existed background image'
+                  message: 'Not found such user'
         '500':
           description: 내부 서버 에러
           content:
@@ -932,6 +954,8 @@ paths:
 
         사용자 로그아웃에 성공한 경우 200 코드를 리턴합니다.
 
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
         다른 사용자의 정보에 접근하는 경우 403 코드를 리턴합니다.
@@ -953,6 +977,15 @@ paths:
                   - $ref: '#/components/schemas/Message'
                 example:
                   message: 'Successfully log out'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -990,7 +1023,7 @@ paths:
                 example:
                   message: 'There is something wrong with the server'
 
-  /api/users/token-refresh:
+  /api/users/{userID}/token-refresh:
     post:
       tags:
         - auth
@@ -1002,9 +1035,11 @@ paths:
 
         Refresh token이 만료된 경우 401 코드를 리턴합니다. 이 경우 다시 로그인해야 합니다.
 
+        사용자가 존재하지 않는 경우 404 코드를 리턴합니다.
+
         그 이외의 경우 500 코드를 리턴합니다.
-      security:
-        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
       requestBody:
         description: Refresh token
         content:
@@ -1040,7 +1075,15 @@ paths:
                   - $ref: '#/components/schemas/Message'
                 example:
                   message: 'The refresh token is expired'
-
+        '404':
+          description: 존재하지 않는 사용자
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such user'
         '500':
           description: 내부 서버 에러
           content:
