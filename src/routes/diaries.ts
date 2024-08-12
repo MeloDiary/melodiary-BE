@@ -6,19 +6,32 @@ import {
   getDiary,
   getLike,
   postLike,
-  deleteLike
+  deleteLike,
+  getCalendar,
+  getMatefeeds,
+  getExplore,
+  getMymoods,
+  getMypost
 } from '../controllers/diariesController.js';
 import { verifyTokenMiddleware } from '../middlewares/authMiddleware.js';
+import commentRouter from './comments.js';
 
 const router = express.Router();
+router.use('/:diaryId/comments', commentRouter);
+router.get('/:diaryId/like', verifyTokenMiddleware, getLike);
+router.post('/:diaryId/like', verifyTokenMiddleware, postLike);
+router.delete('/:diaryId/like', verifyTokenMiddleware, deleteLike);
+
+router.get('/calendar', verifyTokenMiddleware, getCalendar);
+router.get('/mates', verifyTokenMiddleware, getMatefeeds);
+router.get('/explore', verifyTokenMiddleware, getExplore);
+router.get('/myposts', verifyTokenMiddleware, getMypost);
+router.get('/mymoods', verifyTokenMiddleware, getMymoods);
+
 router.post('/', verifyTokenMiddleware, postDiary);
 router.put('/:diaryId', verifyTokenMiddleware, putDiary);
 router.delete('/:diaryId', verifyTokenMiddleware, deleteDiary);
 router.get('/:diaryId', verifyTokenMiddleware, getDiary);
-
-router.get('/:diaryId/like', verifyTokenMiddleware, getLike);
-router.post('/:diaryId/like', verifyTokenMiddleware, postLike);
-router.delete('/:diaryId/like', verifyTokenMiddleware, deleteLike);
 
 const diariesRouter = router;
 export default diariesRouter;

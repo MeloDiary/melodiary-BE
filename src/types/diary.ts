@@ -1,20 +1,19 @@
-export interface IDiary {
-  id: number;
-  title: string;
-  content: string;
-  userId: number;
-  mood?: string | null;
-  emoji?: string | null;
-  privacy: 'public' | 'mate' | 'private';
-  likeCount: number;
-  createdAt: Date;
-  backgroundColor?: string | null;
-}
+// export interface IDiary {
+//   id: number;
+//   title: string;
+//   content: string;
+//   userId: number;
+//   mood?: string | null;
+//   emoji?: string | null;
+//   privacy: 'public' | 'mate' | 'private';
+//   likeCount: number;
+//   createdAt: Date;
+//   backgroundColor?: string | null;
+// }
 
 export interface IPostDiary {
   title: string;
   content: string;
-  user_id: number;
   img_urls?: string[] | null;
   mood?: string | null;
   emoji?: string | null;
@@ -25,7 +24,7 @@ export interface IPostDiary {
 }
 
 interface IPostMusic {
-  musicUrl: string;
+  music_url: string;
   title: string;
   artist: string;
 }
@@ -33,5 +32,5 @@ interface IPostMusic {
 interface IPostWeather {
   location: string;
   icon: string;
-  avgTemperature: number;
+  avg_temperature: number;
 }
