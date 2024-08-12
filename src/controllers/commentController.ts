@@ -41,7 +41,7 @@ export const getComments = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
   try {
     const diaryId = parseInt(req.params.diaryId, 10);
-    const { userId } = req.user as JwtPayload;
+    //const { userId } = req.user as JwtPayload;
 
     //일기에 접근 권한이 있는지?
 
@@ -67,7 +67,7 @@ export const getComments = async (req: Request, res: Response) => {
 export const putComment = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
   try {
-    const diaryId = parseInt(req.params.diaryId, 10);
+    //const diaryId = parseInt(req.params.diaryId, 10);
     const commentId = parseInt(req.params.commentId, 10);
     const { content, mentioned_user_id }: IPostComment = req.body;
     const { userId } = req.user as JwtPayload;
@@ -109,7 +109,7 @@ export const putComment = async (req: Request, res: Response) => {
 export const deleteComment = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
   try {
-    const diaryId = parseInt(req.params.diaryId, 10);
+    //const diaryId = parseInt(req.params.diaryId, 10);
     const commentId = parseInt(req.params.commentId, 10);
     const { userId } = req.user as JwtPayload;
 
