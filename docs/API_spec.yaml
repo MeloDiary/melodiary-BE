@@ -2143,17 +2143,15 @@ paths:
     get:
       tags:
         - diary
-      summary: 일기에 좋아요 여부 조회
+      summary: 일기에 좋아요 정보 조회
       description: |
-        좋아요 조회에 성공한 경우 200코드와 좋아요 여부를 리턴합니다.
+        좋아요 조회에 성공한 경우 200코드와 좋아요 정보를 리턴합니다.
 
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
         권한 없는 유저가 시도할 경우 403 코드를 리턴합니다.
 
         일기가 존재하지 않는 경우 404 코드를 리턴합니다.
-
-        ** 접근 권한이 있는 일기에 좋아요를 등록하지 않은 경우 200코드와 false를 리턴합니다. **
 
         그 이외의 경우 500 코드를 리턴합니다.
 
@@ -2167,7 +2165,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HasPosts'
+                type: array
+                items:
+                  $ref: '#/components/schemas/likedInfo'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -3145,6 +3145,10 @@ components:
           example: '2024-07-31'
         body:
           $ref: '#/components/schemas/DiaryBody'
+        liked:
+          type: boolean
+          example: true
+          description: '현재 유저가 이전에 일기에 좋아요를 눌렀는지 여부'
 
     DiaryBody:
       type: object
@@ -3294,6 +3298,21 @@ components:
         latitude:
           type: string
           example: '222.222'
+
+    likedInfo:
+      type: object
+      properties:
+        userID:
+          type: integer
+          example: 22
+        profile_img_url:
+          type: string
+          example: 'www.image.com'
+        nickname:
+          type: string
+          example: 'nickname'
+        
+
 
   parameters:
     UserID:

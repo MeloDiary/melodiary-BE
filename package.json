@@ -6,7 +6,8 @@
   "main": "build/app.js",
   "scripts": {
     "build": "tsc",
-    "start": "node build/app.js"
+    "start": "node build/app.js",
+    "dev": "tsc && nodemon build/app.js"
   },
   "dependencies": {
     "axios": "^1.7.2",

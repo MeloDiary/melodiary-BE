@@ -1,8 +1,13 @@
 export interface IComment {
   id: number;
-  diaryId: number;
-  writerUserId: number;
+  diary_id: number;
+  writer_user_id: number;
   content: string;
-  mentionedUserId: number;
-  createdAt: Date;
+  mentioned_user_id: number;
+  created_at: Date;
+}
+
+export interface IPostComment {
+  content: string;
+  mentioned_user_id: number;
 }

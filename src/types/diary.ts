@@ -1,15 +1,15 @@
-export interface IDiary {
-  id: number;
-  title: string;
-  content: string;
-  userId: number;
-  mood?: string | null;
-  emoji?: string | null;
-  privacy: 'public' | 'mate' | 'private';
-  likeCount: number;
-  createdAt: Date;
-  backgroundColor?: string | null;
-}
+// export interface IDiary {
+//   id: number;
+//   title: string;
+//   content: string;
+//   userId: number;
+//   mood?: string | null;
+//   emoji?: string | null;
+//   privacy: 'public' | 'mate' | 'private';
+//   likeCount: number;
+//   createdAt: Date;
+//   backgroundColor?: string | null;
+// }
 
 export interface IPostDiary {
   title: string;
@@ -24,7 +24,7 @@ export interface IPostDiary {
 }
 
 interface IPostMusic {
-  url: string;
+  music_url: string;
   title: string;
   artist: string;
 }
