@@ -238,7 +238,7 @@ export const getDiary = async (req: Request, res: Response) => {
   try {
     const diaryId = parseInt(req.params.diaryId, 10);
 
-    const { userId } = req.user as JwtPayload;
+    //const { userId } = req.user as JwtPayload;
 
     dbConnection.beginTransaction();
     // Retrieve diary entry
@@ -422,7 +422,7 @@ export const deleteLike = async (req: Request, res: Response) => {
 export const getCalendar = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
   try {
-    const { userId } = req.user as JwtPayload;
+    //const { userId } = req.user as JwtPayload;
     const { userID: mateId, month } = req.query;
 
     await dbConnection.beginTransaction();
@@ -486,7 +486,7 @@ export const getExplore = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
   try {
     const { userId } = req.user as JwtPayload;
-
+    if (false) console.log(userId);
     await dbConnection.beginTransaction();
 
     const diaryQuery = `SELECT * FROM diary WHERE privacy ='public' ORDER BY created_at DESC`;
