@@ -1,11 +1,10 @@
 // 사용자 관련 DB 쿼리를 처리하는 model
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
-import { IUser } from '../types/user.js';
 import dbPool from '../config/dbConfig.js';
 
 class User {
   // 사용자 ID를 받아서 간략한 사용자 정보를 리턴하는 메서드
-  static async getUserById(userId: number): Promise<IUser | null> {
+  static async getUserById(userId: number): Promise<RowDataPacket | null> {
     try {
       const query = `
         SELECT
@@ -18,7 +17,7 @@ class User {
       const params = [userId];
       const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
 
-      return results.length ? (results[0] as IUser) : null;
+      return results.length ? results[0] : null;
     } catch (error) {
       console.error(`Error fetching user by ID: ${userId}`, error);
       throw new Error('Database query failed');

@@ -1,8 +1,7 @@
 // 사용자 관련 service
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
-import { IAuthRequest, IUser, IUserInfo } from '../types/user';
+import { IAuthRequest } from '../types/user';
 import {
   deleteJWTInRedis,
   generateAccessToken,
@@ -12,6 +11,8 @@ import {
 } from './jwtService.js';
 import User from '../models/userModel.js';
 import redisClient from '../config/redisConfig.js';
+import { generateGetPresignedUrl } from '../utils/s3Utils.js';
+import { generateUniqueRandomNickname } from '../utils/randomNickname.js';
 
 // Google 회원가입 service
 export const googleSignUpService = async (
@@ -55,8 +56,9 @@ export const googleSignUpService = async (
       throw new Error('The user already exists');
     }
 
-    // 닉네임 중복 방지를 위해 초기 닉네임을 uuid로 설정
-    const randomNickname = uuidv4();
+    // 닉네임 중복 방지를 위해 초기 닉네임을 랜덤 동물 닉네임으로 설정
+    const randomNickname = await generateUniqueRandomNickname();
+
     const userId = await User.createUser(userEmail, randomNickname);
 
     if (userId === null) {
@@ -206,8 +208,9 @@ export const naverSignUpService = async (
       throw new Error('The user already exists');
     }
 
-    // 닉네임 중복 방지를 위해 초기 닉네임을 uuid로 설정
-    const randomNickname = uuidv4();
+    // 닉네임 중복 방지를 위해 초기 닉네임을 랜덤 동물 닉네임으로 설정
+    const randomNickname = await generateUniqueRandomNickname();
+
     const userId = await User.createUser(userEmail, randomNickname);
 
     if (userId === null) {
@@ -324,6 +327,7 @@ export const checkNicknameService = async (
 
     return result;
   } catch (error) {
+    console.error('Error in checkNicknameService', error.message);
     throw error;
   }
 };
@@ -337,6 +341,7 @@ export const checkUserService = async (
 
     return result;
   } catch (error) {
+    console.error('Error in checkUserService', error.message);
     throw error;
   }
 };
@@ -347,10 +352,15 @@ export const registerNicknameService = async (
   nickname: string
 ): Promise<number> => {
   try {
+    if (nickname.length < 2 || nickname.length > 14) {
+      throw new Error('The nickname is invalid');
+    }
+
     const result: number = await User.updateUserNickname(userID, nickname);
 
     return result;
   } catch (error) {
+    console.error('Error in registerNicknameService', error.message);
     throw error;
   }
 };
@@ -359,7 +369,7 @@ export const registerNicknameService = async (
 export const searchUserService = async (
   nickname: string,
   email: string
-): Promise<IUser> => {
+): Promise<object> => {
   try {
     let userID: number | null;
 
@@ -375,14 +385,29 @@ export const searchUserService = async (
 
     const searchedUserInfo = await User.getUserById(userID);
 
-    return searchedUserInfo as IUser;
+    if (!searchedUserInfo) {
+      throw new Error('Not found such user');
+    }
+
+    const profileImgURL = searchedUserInfo.profile_img_url
+      ? await generateGetPresignedUrl(searchedUserInfo.profile_img_url)
+      : null;
+
+    const result = {
+      user_id: searchedUserInfo.id,
+      nickname: searchedUserInfo.nickname,
+      profile_img_url: profileImgURL
+    };
+
+    return result;
   } catch (error) {
+    console.error('Error in searchUserService', error.message);
     throw error;
   }
 };
 
 // 사용자 정보 확인 service
-export const userInfoService = async (userID: number): Promise<IUserInfo> => {
+export const userInfoService = async (userID: number): Promise<object> => {
   try {
     const result = await User.getUserInfoById(userID);
 
@@ -390,18 +415,26 @@ export const userInfoService = async (userID: number): Promise<IUserInfo> => {
       throw new Error('Not found such user');
     }
 
-    const userInfo: IUserInfo = {
+    const profileImgURL = result.profile_img_url
+      ? await generateGetPresignedUrl(result.profile_img_url)
+      : null;
+    const profileBackgroundImgURL = result.profile_background_img_url
+      ? await generateGetPresignedUrl(result.profile_background_img_url)
+      : null;
+
+    const userInfo = {
       id: result.id,
-      profileImgURL: result.profile_img_url,
-      profileBackgroundImgURL: result.profile_background_img_url,
+      profile_img_url: profileImgURL,
+      profile_background_img_url: profileBackgroundImgURL,
       nickname: result.nickname,
-      email: result.email,
-      mateCnt: result.mate_count,
-      diaryCnt: result.diary_count
+      email_address: result.email,
+      mate_count: result.mate_count ?? 0,
+      diary_count: result.diary_count ?? 0
     };
 
     return userInfo;
   } catch (error) {
+    console.error('Error in userInfoService', error.message);
     throw error;
   }
 };
@@ -420,6 +453,7 @@ export const deleteUserService = async (userID: number): Promise<number> => {
 
     return result;
   } catch (error) {
+    console.error('Error in deleteUserService', error.message);
     throw error;
   }
 };
@@ -438,6 +472,7 @@ export const registerProfileImgService = async (
 
     return result;
   } catch (error) {
+    console.error('Error in registerProfileImgService', error.message);
     throw error;
   }
 };
@@ -456,6 +491,7 @@ export const registerBackgroundImgService = async (
 
     return result;
   } catch (error) {
+    console.error('Error in registerBackgroundImgService', error.message);
     throw error;
   }
 };
@@ -466,6 +502,7 @@ export const logoutService = async (userID: number): Promise<void> => {
     // Redis에 저장된 JWT 삭제
     await deleteJWTInRedis(userID);
   } catch (error) {
+    console.error('Error in logoutService', error.message);
     throw error;
   }
 };
@@ -474,7 +511,7 @@ export const logoutService = async (userID: number): Promise<void> => {
 export const tokenRefreshService = async (
   userID: number,
   refreshToken: string
-): Promise<{ userId: number; accessToken: string; refreshToken: string }> => {
+): Promise<object> => {
   try {
     // Refresh token 검증
     await verifyRefreshToken(refreshToken);
@@ -510,22 +547,12 @@ export const tokenRefreshService = async (
     await storeJWTInRedis(userID, newAccessToken, newRefreshToken);
 
     return {
-      userId: userID,
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken
+      user_id: userID,
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken
     };
   } catch (error) {
     console.error('Error in access token reissue', error.message);
     throw error;
   }
 };
-
-// // Kakao 회원가입 service
-// export const kakaoSignUpService = async (
-//   authRequest: IAuthRequest
-// ): Promise<{ userId: number; accessToken: string; refreshToken: string }> => {};
-
-// // Kakao 로그인 service
-// export const kakaoLoginService = async (
-//   authRequest: IAuthRequest
-// ): Promise<{ userId: number; accessToken: string; refreshToken: string }> => {};

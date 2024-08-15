@@ -17,7 +17,6 @@ import {
   logoutService,
   tokenRefreshService
 } from '../services/userService.js';
-import { IUserInfo } from '../types/user.js';
 
 //회원가입 controller
 export const signUpController = async (req: Request, res: Response) => {
@@ -215,6 +214,10 @@ export const nicknameController = {
         return res.status(500).json({ message: 'Internal server error' });
       }
     } catch (error) {
+      // 닉네임이 2~14자가 아닐 경우 400 코드 리턴함
+      if (error.message === 'The nickname is invalid') {
+        return res.status(400).json({ message: 'Bad request' });
+      }
       // 서버 내부 오류인 경우 500 코드 리턴함
       return res.status(500).json({ message: 'Internal server error' });
     }
@@ -267,6 +270,10 @@ export const nicknameController = {
         return res.status(500).json({ message: 'Internal server error' });
       }
     } catch (error) {
+      // 닉네임이 2~14자가 아닐 경우 400 코드 리턴함
+      if (error.message === 'The nickname is invalid') {
+        return res.status(400).json({ message: 'Bad request' });
+      }
       // 서버 내부 오류인 경우 500 코드 리턴함
       return res.status(500).json({ message: 'Internal server error' });
     }
@@ -286,17 +293,13 @@ export const searchUserController = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Bad request' });
     }
 
-    const { id, nickname, profileImgURL } = await searchUserService(
+    const result = await searchUserService(
       nicknameQuery as string,
       emailQuery as string
     );
 
     // 사용자 검색에 성공한 경우 200 코드와 사용자 정보 리턴함
-    return res.status(200).json({
-      user_id: id,
-      nickname: nickname,
-      profile_img_url: profileImgURL ?? null
-    });
+    return res.status(200).json(result);
   } catch (error) {
     // 존재하지 않는 사용자인 경우 404 코드 리턴함
     if (error.message === 'Not found such user') {
@@ -324,18 +327,10 @@ export const userInfoController = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'Forbidden: User ID mismatch' });
     }
 
-    const result: IUserInfo = await userInfoService(parsedUserID);
+    const result = await userInfoService(parsedUserID);
 
     // 사용자 정보를 가져오는데 성공한 경우 200 코드와 사용자 정보 리턴함
-    return res.status(200).json({
-      user_id: result.id,
-      profile_img_url: result.profileImgURL ?? null,
-      profile_background_img_url: result.profileBackgroundImgURL ?? null,
-      nickname: result.nickname,
-      email_address: result.email,
-      mate_count: result.mateCnt ?? 0,
-      diary_count: result.diaryCnt ?? 0
-    });
+    return res.status(200).json(result);
   } catch (error) {
     // 존재하지 않는 사용자인 경우 404 코드 리턴함
     if (error.message === 'Not found such user') {
@@ -553,11 +548,7 @@ export const tokenRefreshController = async (req: Request, res: Response) => {
     const result = await tokenRefreshService(parsedUserID, refreshToken);
 
     // Access token 재발급에 성공한 경우 200 코드와 재발급된 JWT 리턴함
-    return res.status(200).json({
-      user_id: result.userId,
-      access_token: result.accessToken,
-      refresh_token: result.refreshToken
-    });
+    return res.status(200).json(result);
   } catch (error) {
     // Refresh token이 만료된 경우 401 코드 리턴함
     if (error.message === 'Invalid or expired refresh token') {
