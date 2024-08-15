@@ -6,6 +6,7 @@ import cors from 'cors';
 import apiSpecRouter from './src/routes/apiSpecRoutes.js';
 import userRouter from './src/routes/userRoutes.js';
 import diariesRouter from './src/routes/diaries.js';
+import weatherRouter from './src/routes/weather.js';
 
 const app: Application = express();
 const port = parseInt(process.env.PORT || '4000', 10);
@@ -38,6 +39,7 @@ app.use(
 app.use('/api-spec', apiSpecRouter);
 app.use('/api/users', userRouter);
 app.use('/api/diaries', diariesRouter);
+app.use('/api/weather', weatherRouter);
 
 app.get('/', (_, res: Response) => {
   res.status(200).json({ message: 'Welcome!' });
