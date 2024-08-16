@@ -2457,6 +2457,8 @@ paths:
       summary: 친구들이 공개한 일기를 최신순으로 조회
       description: |
 
+        ?page=(페이지번호,기본값:1)&limit=(가져올row수, 기본값:5)
+
         일기 목록 조회에 성공한 경우 200코드와 일기 목록을 리턴합니다.
 
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
@@ -2464,6 +2466,9 @@ paths:
         그 이외의 경우 500 코드를 리턴합니다.
       security:
         - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'        
       responses:
         '200':
           description: 친구들의 일기 최신순 조회
@@ -2500,6 +2505,9 @@ paths:
         - diary
       summary: 전체 공개 글 피드 조회
       description: |
+
+        ?page=(페이지번호,기본값:1)&limit=(가져올row수, 기본값:5)
+
         일기 목록 조회에 성공한 경우 200코드와 일기 목록을 리턴합니다.
 
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
@@ -2507,6 +2515,9 @@ paths:
         그 이외의 경우 500 코드를 리턴합니다.
       security:
         - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'   
       responses:
         '200':
           description: 전체 공개 글 피드 조회
@@ -3659,3 +3670,19 @@ components:
       schema:
         type: string
         example: '222.222'
+
+    Page:
+      name: page
+      in: query
+      description: 페이지번호 (기본값 1)
+      schema:
+        type: number
+        example: 1     
+
+    Limit:
+      name: limit
+      in: query
+      description: 가져올 row의 수 (기본값 5)
+      schema:
+        type: number
+        example: 5 
