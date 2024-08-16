@@ -5,7 +5,7 @@ info:
     ### 당신의 하루를 음악과 함께 기록하세요.
   contact:
     email: melodiary@gmail.com
-  version: 1.0.2
+  version: 1.0.3
 servers:
   - url: https://api.melodiary.site
 tags:
@@ -25,6 +25,8 @@ tags:
     description: 날씨 관련 API
   - name: music
     description: 음악 관련 API
+  - name: AWS
+    description: AWS 관련 API
 
 paths:
   /api/users:
@@ -1226,7 +1228,7 @@ paths:
                 example:
                   message: 'Forbidden: User ID mismatch'
         '404':
-          description: 친구로 등록된 사용자가 없음
+          description: 친구 요청 받을 사용자가 존재하지 않음
           content:
             application/json:
               schema:
@@ -1343,6 +1345,8 @@ paths:
 
         받은 친구 요청 목록을 가져오는데 성공한 경우 200 코드와 받은 친구 요청 목록을 리턴합니다.
 
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
         다른 사용자의 정보에 접근하는 경우 403 코드를 리턴합니다.
@@ -1363,6 +1367,15 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RequestInfo'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -1410,6 +1423,8 @@ paths:
 
         보낸 친구 요청 목록을 가져오는데 성공한 경우 200 코드와 보낸 친구 요청 목록을 리턴합니다.
 
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
         다른 사용자의 정보에 접근하는 경우 403 코드를 리턴합니다.
@@ -1430,6 +1445,15 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RequestInfo'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -1635,6 +1659,8 @@ paths:
 
         읽지 않은 알림이 있는 경우 200 코드와 읽지 않은 알림 목록을 리턴합니다.
 
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
         다른 사용자의 정보에 접근하는 경우 403 코드를 리턴합니다.
@@ -1665,9 +1691,17 @@ paths:
                   value:
                     - notification_id: 728
                       content: 'someone wants to be friends with you'
-                      request_id: 297
                       category: 'mate'
                       date: '2024-07-26'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -1715,6 +1749,8 @@ paths:
 
         읽은 알림이 있는 경우 200 코드와 읽은 알림 목록을 리턴합니다.
 
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
         다른 사용자의 정보에 접근하는 경우 403 코드를 리턴합니다.
@@ -1745,9 +1781,17 @@ paths:
                   value:
                     - notification_id: 728
                       content: 'someone wants to be friends with you'
-                      request_id: 297
                       category: 'mate'
                       date: '2024-07-26'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -1774,7 +1818,87 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/Message'
                 example:
-                  message: 'There is no unread notification'
+                  message: 'There is no read notification'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
+  /api/users/{userID}/notifications/{notificationID}:
+    put:
+      tags:
+        - notification
+      summary: 알림 읽음 상태로 변경
+      description: |
+        path에 사용자ID와 알림ID를 담아야합니다.
+
+        알림을 읽은 상태로 변경하는데 성공한 경우 200 코드를 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        다른 사용자의 정보에 접근하는 경우 403 코드를 리턴합니다.
+
+        알림ID에 해당하는 알림이 존재하지 않는 경우 404 코드를 리턴합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+        - $ref: '#/components/parameters/NotificationID'
+      responses:
+        '200':
+          description: 알림 읽음 상태로 변경 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully changed status of the notification'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '403':
+          description: 액세스 금지됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Forbidden: User ID mismatch'
+        '404':
+          description: 알림ID에 해당하는 알림이 존재하지 않음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Not found such notification'
         '500':
           description: 내부 서버 에러
           content:
@@ -3039,6 +3163,66 @@ paths:
                 example:
                   message: 'There is something wrong with the server'
 
+  /api/aws/presigned-url:
+    post:
+      tags:
+        - AWS
+      summary: 프리사인드 URL 요청
+      description: |
+        프리사인드 URL 생성에 성공한 경우 200 코드와 프리사인드 URL을 리턴합니다.
+
+        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
+
+        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
+
+        그 이외의 경우 500 코드를 리턴합니다.
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: |
+          이미지 파일 이름
+
+          이미지 파일의 MIME 타입
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/S3body'
+        required: true
+      responses:
+        '200':
+          description: 프리사인드 URL 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedURL'
+        '400':
+          description: 잘못된 요청 구문
+          content:
+            applicaiton/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Bad request'
+        '401':
+          description: Access token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'The access token is invalid or expired'
+        '500':
+          description: 내부 서버 에러
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'There is something wrong with the server'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -3352,8 +3536,23 @@ components:
         nickname:
           type: string
           example: 'nickname'
-        
 
+    S3body:
+      type: object
+      properties:
+        file_name:
+          type: string
+          example: 'profile-img-30.jpg'
+        file_type:
+          type: string
+          example: 'image/jpg'
+
+    PresignedURL:
+      type: object
+      properties:
+        presigned_url:
+          type: string
+          example: 'https://melodiary-bucket.s3.amazonaws.com/profile-img-30.jpg?AWSAccessKeyId=AKIA...&Signature=abcd1234...&Expires=1609459200'
 
   parameters:
     UserID:
@@ -3387,6 +3586,14 @@ components:
       schema:
         type: integer
         example: 1427
+
+    NotificationID:
+      name: notificationID
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 14
 
     UserNickname:
       name: nickname
