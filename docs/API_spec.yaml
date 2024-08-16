@@ -2334,7 +2334,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/likedInfo'
+                  $ref: '#/components/schemas/ProfileInfo'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -2380,7 +2380,11 @@ paths:
       description: |
         유저ID와 'YYYY-MM' 형식의 조회하고자 하는 달을 쿼리에 담아 요청해야 합니다.
 
+        ex. /api/diaries/calendar?userId=20&month=2024-08
+
         유저의 월별 일기 목록 조회에 성공한 경우 200코드와 일기 목록을 리턴합니다.
+
+        이 때에 일기 작성자의 ID와 현재 유저 ID를 비교하여 동일 인물인 경우 모든 일기를, 친구 사이인 경우 privacy가 mate, public인 일기를, 아닐 경우 public인 일기를 가져옵니다.
 
         요청 구문이 잘못된 경우 400 코드를 리턴합니다.
 
@@ -2401,9 +2405,14 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CalendarItem'
+                type: object
+                properties:
+                  user_profile:
+                      $ref: '#/components/schemas/ProfileInfo'
+                  calendar:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CalendarItem'
         '400':
           description: 잘못된 요청
           content:
@@ -2463,7 +2472,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CalendarItem'
+                  $ref: '#/components/schemas/DiaryInfo'
 
         '401':
           description: Access token이 유효하지 않거나 만료됨
@@ -2506,7 +2515,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CalendarItem'
+                  $ref: '#/components/schemas/DiaryInfo'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -2547,7 +2556,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CalendarItem'
+                  $ref: '#/components/schemas/DiaryInfo'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -3117,17 +3126,11 @@ paths:
         - music
       summary: 음악 사용기록 조회
       description: |
-        음악정보 조회에 성공한 경우 200코드와 음악정보를 리턴합니다.
-
-        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
-
-        권한 없는 유저가 시도할 경우 403 코드를 리턴합니다.
+        음악정보 조회에 성공한 경우 200코드와 친구 관계나 privacy에 상관 없이 모든 음악 정보를 가져옵니다.를 리턴합니다.
 
         유저가 존재하지 않는 경우 404 코드를 리턴합니다.
 
         그 이외의 경우 500 코드를 리턴합니다.
-      security:
-        - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/UserID'
       responses:
@@ -3136,18 +3139,14 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MusicInfo'
-        '401':
-          description: Access token이 유효하지 않거나 만료됨
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Message'
-                example:
-                  message: 'The access token is invalid or expired'
+                type: object
+                properties:
+                  user_profile:
+                    $ref: '#/components/schemas/ProfileInfo'
+                  musics:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MusicInfo'
         '400':
           description: 잘못된 요청
           content:
@@ -3361,9 +3360,8 @@ components:
         id:
           type: integer
           example: 58
-        user_id:
-          type: integer
-          example: 'writer'
+        user_profile:
+          $ref: '#/components/schemas/ProfileInfo'
         like_count:
           type: integer
           example: 99
@@ -3506,7 +3504,7 @@ components:
     MusicInfo:
       type: object
       properties:
-        url:
+        music_url:
           type: string
           example: 'www.youtube.com/'
         title:
@@ -3526,10 +3524,10 @@ components:
           type: string
           example: '222.222'
 
-    likedInfo:
+    ProfileInfo:
       type: object
       properties:
-        userID:
+        user_id:
           type: integer
           example: 22
         profile_img_url:

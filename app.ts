@@ -7,6 +7,7 @@ import cors from 'cors';
 import apiSpecRouter from './src/routes/apiSpecRoutes.js';
 import userRouter from './src/routes/userRoutes.js';
 import diariesRouter from './src/routes/diaries.js';
+import weatherRouter from './src/routes/weather.js';
 import mateRouter from './src/routes/mateRoutes.js';
 import awsRouter from './src/routes/awsRoutes.js';
 import notificationRouter from './src/routes/notificationRoutes.js';
@@ -43,6 +44,7 @@ app.use('/api-spec', apiSpecRouter);
 app.use('/api/users', userRouter);
 app.use('/api/users/:userID/mates', mateRouter);
 app.use('/api/diaries', diariesRouter);
+app.use('/api/weather', weatherRouter);
 app.use('/api/aws', awsRouter);
 app.use('/api/users/:userID/notifications', notificationRouter);
 
