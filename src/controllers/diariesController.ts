@@ -160,16 +160,21 @@ export const putDiary = async (req: Request, res: Response) => {
 
     dbConnection.beginTransaction();
     // 수정하려는 일기의 유저 ID와 현재 유저 ID를 비교한 후, 다르면 403(권한없음) 에러를 리턴합니다.
-    const checkQuery = `SELECT * FROM diary WHERE id = ? AND user_id= ?`;
+    const checkQuery = `SELECT * FROM diary WHERE id = ?`;
     const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
       checkQuery,
-      [diaryId, userId]
+      [diaryId]
     );
-    if (checkRows.length == 0) {
+
+    if (checkRows.length === 0) {
+      return res.status(404).json({ message: 'Not Found that diary' });
+    }
+    if (checkRows[0].user_id != userId) {
       return res
         .status(403)
         .json({ message: 'No permission to access the diary' });
     }
+
     // Update the diary table
     const diaryQuery = `
       UPDATE diary 
@@ -248,17 +253,19 @@ export const deleteDiary = async (req: Request, res: Response) => {
     await dbConnection.beginTransaction();
 
     // 수정하려는 일기의 유저 ID와 현재 유저 ID를 비교한 후, 다르면 403(권한없음) 에러를 리턴합니다.
-    const checkQuery = `SELECT * FROM diary WHERE id = ? AND user_id= ?`;
+    const checkQuery = `SELECT * FROM diary WHERE id = ?`;
     const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
       checkQuery,
       [diaryId, userId]
     );
-    if (checkRows.length == 0) {
+    if (checkRows.length === 0) {
+      return res.status(404).json({ message: 'Not Found that diary' });
+    }
+    if (checkRows[0].user_id != userId) {
       return res
         .status(403)
         .json({ message: 'No permission to access the diary' });
     }
-
     // Delete from music table first due to foreign key constraints
     const deleteMusicQuery = `
       DELETE FROM music WHERE diary_id = ?`;
@@ -420,6 +427,11 @@ export const getLike = async (req: Request, res: Response) => {
       checkQuery,
       [diaryId]
     );
+
+    if (checkRows.length === 0) {
+      return res.status(404).json({ message: 'Not Found that diary' });
+    }
+
     const checkRow = checkRows[0];
     const checkAuth = await checkAccessAuth(
       userId,
@@ -482,6 +494,10 @@ export const postLike = async (req: Request, res: Response) => {
       checkQuery,
       [diaryId]
     );
+    if (checkRows.length === 0) {
+      return res.status(404).json({ message: 'Not Found that diary' });
+    }
+
     const checkRow = checkRows[0];
     const checkAuth = await checkAccessAuth(
       userId,
@@ -538,8 +554,14 @@ export const deleteLike = async (req: Request, res: Response) => {
 
     // diary 테이블에 데이터 삽입
     const query = `DELETE FROM likes WHERE user_id =? AND diary_id= ?`;
-    await dbConnection.execute<RowDataPacket[]>(query, [userId, diaryId]);
-
+    const queryResult = await dbConnection.execute<ResultSetHeader>(query, [
+      userId,
+      diaryId
+    ]);
+    if (queryResult[0].affectedRows == 0) {
+      res.status(404).json({ message: 'Not Found that diary' });
+      throw new Error();
+    }
     const diaryQuery = `
       UPDATE diary 
       SET like_count = like_count-1
@@ -634,9 +656,31 @@ export const getMatefeeds = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
   try {
     const { userId } = req.user as JwtPayload;
-
+    const schema = Joi.object({
+      page: Joi.number().integer().min(1).default(1),
+      limit: Joi.number().integer().min(1).default(5)
+    });
+    let {
+      error,
+      value: { page, limit }
+    } = schema.validate(req.query);
+    if (error) {
+      page = page || 1;
+      limit = limit || 5;
+    }
     await dbConnection.beginTransaction();
-    const mateQuery = `SELECT received_user_id AS mate_id FROM mate WHERE status = 'accepted' AND requested_user_id = ? OR received_user_id = ?`;
+    const mateQuery = `SELECT requested_user_id AS mate_id 
+    FROM mate 
+    WHERE status = 'accepted' 
+    AND received_user_id = ?
+
+    UNION
+
+    SELECT received_user_id AS mate_id 
+    FROM mate 
+    WHERE status = 'accepted' 
+    AND requested_user_id = ?
+    `;
 
     const [mateRows] = await dbConnection.execute<RowDataPacket[]>(mateQuery, [
       userId,
@@ -671,10 +715,11 @@ export const getMatefeeds = async (req: Request, res: Response) => {
         WHERE 
           d.user_id IN (?) AND d.privacy IN ('mate','public')
         GROUP BY 
-          d.id
+          d.id          
         ORDER BY 
-          d.created_at DESC;
-      `;
+          d.created_at DESC
+        LIMIT ${limit} OFFSET ${limit * (page - 1)};
+        `;
       [diaryRows] = await dbConnection.execute<RowDataPacket[]>(diaryQuery, [
         userId,
         mateIds
@@ -734,8 +779,18 @@ export const getExplore = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
   try {
     const { userId } = req.user as JwtPayload;
-    if (false) console.log(userId);
-
+    const schema = Joi.object({
+      page: Joi.number().integer().min(1).default(1),
+      limit: Joi.number().integer().min(1).default(5)
+    });
+    let {
+      error,
+      value: { page, limit }
+    } = schema.validate(req.query);
+    if (error) {
+      page = page || 1;
+      limit = limit || 5;
+    }
     await dbConnection.beginTransaction();
 
     const diaryQuery = `
@@ -763,7 +818,9 @@ export const getExplore = async (req: Request, res: Response) => {
       GROUP BY 
         d.id
       ORDER BY 
-        d.created_at DESC;
+        d.created_at DESC
+      LIMIT ${limit} OFFSET ${limit * (page - 1)};
+;
     `;
     const [diaryRows] = await dbConnection.execute<RowDataPacket[]>(
       diaryQuery,
