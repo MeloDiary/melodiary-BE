@@ -83,5 +83,5 @@ userRouter.put(
 // POST api/users/{userID}/logout, 로그아웃 요청 routing
 userRouter.post('/:userID/logout', verifyTokenMiddleware, logoutController);
 
-userRouter.post(`/:userID/music`, getMusicHistory);
+userRouter.get('/:userID/music', getMusicHistory);
 export default userRouter;

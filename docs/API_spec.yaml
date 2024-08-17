@@ -3081,7 +3081,7 @@ paths:
         - music
       summary: 음악 정보 수정
       description: |
-        음악정보 수정에 성공한 경우 200코드와 음악정보를 리턴합니다.
+        음악정보 수정에 성공한 경우 200코드를 리턴합니다.
 
         Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
 
@@ -3099,7 +3099,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MusicInfo'
+                allOf:
+                  - $ref: '#/components/schemas/Message'
+                example:
+                  message: 'Successfully editted the music'
 
         '401':
           description: Access token이 유효하지 않거나 만료됨
@@ -3157,7 +3160,17 @@ paths:
                   musics:
                     type: array
                     items:
-                      $ref: '#/components/schemas/MusicInfo'
+                      allOf:
+                        - $ref: '#/components/schemas/MusicInfo'
+                        - type: object
+                          properties:
+                            created_at:
+                              type: string
+                              format: date
+
+                              
+
+
         '400':
           description: 잘못된 요청
           content:
@@ -3564,6 +3577,9 @@ components:
         presigned_url:
           type: string
           example: 'https://melodiary-bucket.s3.amazonaws.com/profile-img-30.jpg?AWSAccessKeyId=AKIA...&Signature=abcd1234...&Expires=1609459200'
+
+
+        
 
   parameters:
     UserID:
