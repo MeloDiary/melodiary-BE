@@ -2966,169 +2966,7 @@ paths:
                   - $ref: '#/components/schemas/Message'
                 example:
                   message: 'There is something wrong with the server'
-
-  /api/diaries/{diaryID}/weather:
-    get:
-      tags:
-        - weather
-      summary: 일기의 날씨정보 조회
-      description: |
-        날씨정보 조회에 성공한 경우 200코드와 날씨정보를 리턴합니다.
-
-        요청 구문이 잘못된 경우 400 코드를 리턴합니다.
-
-        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
-
-        권한 없는 유저가 시도할 경우 403 코드를 리턴합니다.
-
-        일기가 존재하지 않는 경우 404 코드를 리턴합니다.
-
-        그 이외의 경우 500 코드를 리턴합니다.
-
-      security:
-        - BearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/DiaryID'
-      responses:
-        '200':
-          description: 일기의 날씨 정보
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WeatherInfo'
-        '401':
-          description: Access token이 유효하지 않거나 만료됨
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Message'
-                example:
-                  message: 'The access token is invalid or expired'
-        '400':
-          description: 잘못된 요청
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Message'
-        '500':
-          description: 내부 서버 에러
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Message'
-                example:
-                  message: 'There is something wrong with the server'
-
-  /api/diaries/{diaryID}/music:
-    get:
-      tags:
-        - music
-      summary: 음악 정보 조회
-      description: |
-        음악정보 조회에 성공한 경우 200코드와 음악정보를 리턴합니다.
-
-        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
-
-        일기가 존재하지 않는 경우 404 코드를 리턴합니다.
-
-        그 이외의 경우 500 코드를 리턴합니다.
-
-      security:
-        - BearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/DiaryID'
-      responses:
-        '200':
-          description: 일기 음악 정보
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MusicInfo'
-
-        '401':
-          description: Access token이 유효하지 않거나 만료됨
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Message'
-                example:
-                  message: 'The access token is invalid or expired'
-
-        '404':
-          description: 존재하지 않는 일기 또는 댓글
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Message'
-                example:
-                  message: 'Not found such diary or comment'
-        '500':
-          description: 내부 서버 에러
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Message'
-                example:
-                  message: 'There is something wrong with the server'
-
-    put:
-      tags:
-        - music
-      summary: 음악 정보 수정
-      description: |
-        음악정보 수정에 성공한 경우 200코드와 음악정보를 리턴합니다.
-
-        Access token이 유효하지 않을 경우 401 코드를 리턴합니다. 이 경우 access token을 재발급 받아야 합니다.
-
-        일기가 존재하지 않는 경우 404 코드를 리턴합니다.
-
-        그 이외의 경우 500 코드를 리턴합니다.
-
-      security:
-        - BearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/DiaryID'
-      responses:
-        '200':
-          description: 일기 음악 정보
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MusicInfo'
-
-        '401':
-          description: Access token이 유효하지 않거나 만료됨
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Message'
-                example:
-                  message: 'The access token is invalid or expired'
-
-        '404':
-          description: 존재하지 않는 일기
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Message'
-                example:
-                  message: 'Not found such diary'
-        '500':
-          description: 내부 서버 에러
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Message'
-                example:
-                  message: 'There is something wrong with the server'
+  
 
   /api/users/{userID}/music:
     get:
@@ -3137,13 +2975,17 @@ paths:
         - music
       summary: 음악 사용기록 조회
       description: |
-        음악정보 조회에 성공한 경우 200코드와 친구 관계나 privacy에 상관 없이 모든 음악 정보를 가져옵니다.를 리턴합니다.
+        ?page=(페이지번호,기본값:1)&limit=(가져올row수, 기본값:5)
+  
+        음악정보 조회에 성공한 경우 200코드와 친구 관계나 privacy에 상관 없이 모든 음악 정보를 리턴합니다.
 
         유저가 존재하지 않는 경우 404 코드를 리턴합니다.
 
         그 이외의 경우 500 코드를 리턴합니다.
       parameters:
         - $ref: '#/components/parameters/UserID'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit' 
       responses:
         '200':
           description: 일기 음악 정보
@@ -3157,7 +2999,17 @@ paths:
                   musics:
                     type: array
                     items:
-                      $ref: '#/components/schemas/MusicInfo'
+                      allOf:
+                        - $ref: '#/components/schemas/MusicInfo'
+                        - type: object
+                          properties:
+                            created_at:
+                              type: string
+                              format: date
+
+                              
+
+
         '400':
           description: 잘못된 요청
           content:
@@ -3564,6 +3416,9 @@ components:
         presigned_url:
           type: string
           example: 'https://melodiary-bucket.s3.amazonaws.com/profile-img-30.jpg?AWSAccessKeyId=AKIA...&Signature=abcd1234...&Expires=1609459200'
+
+
+        
 
   parameters:
     UserID:

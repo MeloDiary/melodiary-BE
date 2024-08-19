@@ -14,6 +14,7 @@ import {
   userInfoController
 } from '../controllers/userController.js';
 import { verifyTokenMiddleware } from '../middlewares/authMiddleware.js';
+import { getMusicHistory } from '../controllers/musicController.js';
 
 const userRouter = express.Router();
 // GET api/users, 사용자 검색 요청 routing
@@ -82,4 +83,5 @@ userRouter.put(
 // POST api/users/{userID}/logout, 로그아웃 요청 routing
 userRouter.post('/:userID/logout', verifyTokenMiddleware, logoutController);
 
+userRouter.get('/:userID/music', getMusicHistory);
 export default userRouter;

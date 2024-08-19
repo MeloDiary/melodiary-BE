@@ -97,9 +97,9 @@ export const postDiary = async (req: Request, res: Response) => {
     }
 
     if (img_urls && img_urls.length > 0) {
-      const imgQuery = `INSERT INTO image (diary_id, image_url) VALUES (?, ?)`;
-      for (const img_url of img_urls) {
-        await dbConnection.execute(imgQuery, [diaryId, img_url]);
+      const imgQuery = `INSERT INTO image (diary_id, image_url,image_order) VALUES (?, ?, ?)`;
+      for (let i = 0; i < img_urls.length; i++) {
+        await dbConnection.execute(imgQuery, [diaryId, img_urls[i], i]);
       }
     }
 
@@ -153,9 +153,9 @@ export const putDiary = async (req: Request, res: Response) => {
       privacy,
       background_color,
       music,
-      weather
-    }: //img_urls
-    IPostDiary = req.body;
+      weather,
+      img_urls
+    }: IPostDiary = req.body;
     const { userId } = req.user as JwtPayload;
 
     dbConnection.beginTransaction();
@@ -221,7 +221,30 @@ export const putDiary = async (req: Request, res: Response) => {
       ]);
     }
 
-    //이미지 수정 부분은 우선 제외
+    if (img_urls && img_urls.length > 0) {
+      const imgCheckQuery = `SELECT * FROM image WHERE diary_id = ?`;
+      const [imgCheckRows] = await dbConnection.execute<RowDataPacket[]>(
+        imgCheckQuery,
+        [diaryId]
+      );
+
+      const imgQuery = `INSERT INTO image 
+      (diary_id, image_url,image_order) VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE image_url = VALUES(image_url);
+      `;
+      for (let i = 0; i < img_urls.length; i++) {
+        await dbConnection.execute(imgQuery, [diaryId, img_urls[i], i]);
+      }
+
+      if (imgCheckRows.length > img_urls.length) {
+        const deleteQuery = `
+            DELETE FROM image 
+            WHERE diary_id = ? AND image_order > ?;
+        `;
+        await dbConnection.execute(deleteQuery, [diaryId, img_urls.length - 1]);
+      }
+    }
+
     await dbConnection.commit();
     res.status(200).json({ message: 'Successfully changed the diary' });
   } catch (error) {
