@@ -1,4 +1,4 @@
-import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { RowDataPacket } from 'mysql2';
 import { Request, Response } from 'express';
 import dbPool from '../config/dbConfig.js';
 import Joi from 'joi';
@@ -7,6 +7,18 @@ export const getMusicHistory = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
   try {
     const userId = parseInt(req.params.userID, 10);
+    const schema = Joi.object({
+      page: Joi.number().integer().min(1).default(1),
+      limit: Joi.number().integer().min(1).default(5)
+    });
+    let {
+      error,
+      value: { page, limit }
+    } = schema.validate(req.query);
+    if (error) {
+      page = page || 1;
+      limit = limit || 5;
+    }
 
     let userQuery = `SELECT id, nickname, profile_img_url FROM user WHERE id=?`;
     const [userRows] = await dbConnection.execute<RowDataPacket[]>(userQuery, [
@@ -14,7 +26,7 @@ export const getMusicHistory = async (req: Request, res: Response) => {
     ]);
     if (userRows.length == 0) {
       return res.status(404).json({ message: 'Not found that user' });
-    }    
+    }
 
     const musicQuery = `
     SELECT
@@ -26,20 +38,24 @@ export const getMusicHistory = async (req: Request, res: Response) => {
       d.user_id= ?
     ORDER BY
       d.created_at DESC
-    `
-    const [musicRows]=await dbConnection.execute<RowDataPacket[]>(musicQuery,[userId])
+      LIMIT ${limit} OFFSET ${limit * (page - 1)};
+
+    `;
+    const [musicRows] = await dbConnection.execute<RowDataPacket[]>(
+      musicQuery,
+      [userId]
+    );
     return res.status(200).json({
       user_profile: userRows[0],
-      musics: musicRows.map((row)=>{
-        return{
-        music_url: row.music_url,
-        title: row.title,
-        artist: row.artist,
-        created_at: row.created_at
-      }})
-    })
-
-    
+      musics: musicRows.map((row) => {
+        return {
+          music_url: row.music_url,
+          title: row.title,
+          artist: row.artist,
+          created_at: row.created_at
+        };
+      })
+    });
   } catch (error) {
     await dbConnection.rollback();
     console.error('업데이트 오류:', error);
