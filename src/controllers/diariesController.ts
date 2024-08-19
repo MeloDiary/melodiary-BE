@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import dbPool from '../config/dbConfig.js';
 import { IPostDiary } from '../types/diary';
 import { JwtPayload } from 'jsonwebtoken';
+import { generateGetPresignedUrl } from '../utils/s3Utils.js';
 import Joi from 'joi';
 
 export const postDiary = async (req: Request, res: Response) => {
@@ -24,7 +25,7 @@ export const postDiary = async (req: Request, res: Response) => {
     const diarySchema = Joi.object({
       title: Joi.string().required(),
       content: Joi.string().required(),
-      img_urls: Joi.array().items(Joi.string().uri()).optional(),
+      img_urls: Joi.array().items(Joi.string()).optional(),
       mood: Joi.string().optional(),
       emoji: Joi.string().optional(),
       privacy: Joi.string().valid('public', 'private', 'mate').optional(),
@@ -381,43 +382,10 @@ export const getDiary = async (req: Request, res: Response) => {
         .json({ message: 'No permission to access the diary' });
     }
 
-    const result = {
-      id: row.id,
-      user_profile: {
-        user_id: row.user_id,
-        profile_img_url: row.profile_img_url,
-        nickname: row.nickname
-      },
-      like_count: row.like_count,
-      created_at: row.created_at,
-      body: {
-        title: row.title,
-        content: row.content,
-        img_urls: row.img_urls ? row.img_urls.split(',') : [],
-        mood: row.mood,
-        emoji: row.emoji,
-        privacy: row.privacy,
-        music: row.music_url
-          ? {
-              music_url: row.music_url,
-              title: row.music_title,
-              artist: row.music_artist
-            }
-          : null,
-        weather: row.location
-          ? {
-              location: row.location,
-              icon: row.weather_icon,
-              avg_temperature: row.avg_temperature
-            }
-          : null,
-        background_color: row.background_color
-      },
-      liked: Boolean(row.liked)
-    };
+    const diaryInfo = await convertDiaryInfo(row)
 
     await dbConnection.commit();
-    res.status(200).json(result);
+    res.status(200).json(diaryInfo);
   } catch (error) {
     await dbConnection.rollback();
     console.error('조회 오류:', error);
@@ -748,45 +716,12 @@ export const getMatefeeds = async (req: Request, res: Response) => {
         mateIds
       ]);
     }
-    const result = diaryRows.map((row) => {
-      return {
-        id: row.id,
-        user_profile: {
-          user_id: row.user_id,
-          profile_img_url: row.profile_img_url,
-          nickname: row.nickname
-        },
-        like_count: row.like_count,
-        created_at: row.created_at,
-        body: {
-          title: row.title,
-          content: row.content,
-          img_urls: row.img_urls ? row.img_urls.split(',') : [],
-          mood: row.mood,
-          emoji: row.emoji,
-          privacy: row.privacy,
-          music: row.music_url
-            ? {
-                music_url: row.music_url,
-                title: row.music_title,
-                artist: row.music_artist
-              }
-            : null,
-          weather: row.location
-            ? {
-                location: row.location,
-                icon: row.weather_icon,
-                avg_temperature: row.avg_temperature
-              }
-            : null,
-          background_color: row.background_color
-        },
-        liked: Boolean(row.liked)
-      };
+    const diaryInfos = diaryRows.map((row) => {
+      return convertDiaryInfo(row)
     });
 
     await dbConnection.commit();
-    res.status(200).json(result);
+    res.status(200).json(diaryInfos);
   } catch (error) {
     await dbConnection.rollback();
     console.error(error);
@@ -851,40 +786,8 @@ export const getExplore = async (req: Request, res: Response) => {
     );
 
     const result = diaryRows.map((row) => {
-      return {
-        id: row.id,
-        user_profile: {
-          user_id: row.user_id,
-          profile_img_url: row.profile_img_url,
-          nickname: row.nickname
-        },
-        like_count: row.like_count,
-        created_at: row.created_at,
-        body: {
-          title: row.title,
-          content: row.content,
-          img_urls: row.img_urls ? row.img_urls.split(',') : [],
-          mood: row.mood,
-          emoji: row.emoji,
-          privacy: row.privacy,
-          music: row.music_url
-            ? {
-                music_url: row.music_url,
-                title: row.music_title,
-                artist: row.music_artist
-              }
-            : null,
-          weather: row.location
-            ? {
-                location: row.location,
-                icon: row.weather_icon,
-                avg_temperature: row.avg_temperature
-              }
-            : null,
-          background_color: row.background_color
-        },
-        liked: Boolean(row.liked)
-      };
+      return convertDiaryInfo(row)
+      ;
     });
     await dbConnection.commit();
     res.status(200).json(result);
@@ -947,44 +850,12 @@ export const getMypost = async (req: Request, res: Response) => {
       [userId, userId]
     );
 
-    const result = diaryRows.map((row) => {
-      return {
-        id: row.id,
-        user_profile: {
-          user_id: row.user_id,
-          profile_img_url: row.profile_img_url,
-          nickname: row.nickname
-        },
-        like_count: row.like_count,
-        created_at: row.created_at,
-        body: {
-          title: row.title,
-          content: row.content,
-          img_urls: row.img_urls ? row.img_urls.split(',') : [],
-          mood: row.mood,
-          emoji: row.emoji,
-          privacy: row.privacy,
-          music: row.music_url
-            ? {
-                music_url: row.music_url,
-                title: row.music_title,
-                artist: row.music_artist
-              }
-            : null,
-          weather: row.location
-            ? {
-                location: row.location,
-                icon: row.weather_icon,
-                avg_temperature: row.avg_temperature
-              }
-            : null,
-          background_color: row.background_color
-        },
-        liked: Boolean(row.liked)
-      };
+    const diaryInfos = diaryRows.map((row) => {
+      return convertDiaryInfo(row)
     });
+
     await dbConnection.commit();
-    res.status(200).json(result);
+    res.status(200).json(diaryInfos);
   } catch (error) {
     await dbConnection.rollback();
     console.error(error);
@@ -1082,3 +953,48 @@ const checkAccessAuth = async (
     throw new Error('mate 테이블 참조 불가 오류 발생');
   }
 };
+
+const convertDiaryInfo = async(row: any) => {
+    const profileImgURL = row.profile_img_url
+      ? await generateGetPresignedUrl(row.profile_img_url)
+      : null;
+
+    const diaryImgUrls = row.img_urls ? await row.img_urls.split(',').map((url : string)=> {return generateGetPresignedUrl(url)}) : []
+
+    const result = {
+      id: row.id,
+      user_profile: {
+        user_id: row.user_id,
+        profile_img_url: profileImgURL,
+        nickname: row.nickname
+      },
+      like_count: row.like_count,
+      created_at: row.created_at,
+      body: {
+        title: row.title,
+        content: row.content,
+        img_urls: diaryImgUrls,
+        mood: row.mood,
+        emoji: row.emoji,
+        privacy: row.privacy,
+        music: row.music_url
+          ? {
+              music_url: row.music_url,
+              title: row.music_title,
+              artist: row.music_artist
+            }
+          : null,
+        weather: row.location
+          ? {
+              location: row.location,
+              icon: row.weather_icon,
+              avg_temperature: row.avg_temperature
+            }
+          : null,
+        background_color: row.background_color
+      },
+      liked: Boolean(row.liked)
+    };
+
+    return result
+}
