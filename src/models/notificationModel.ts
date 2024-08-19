@@ -7,6 +7,8 @@ class Notification {
   static async getUnreadNotifications(
     userID: number
   ): Promise<RowDataPacket[]> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -19,7 +21,10 @@ class Notification {
           status = ?;
       `;
       const params = [userID, 'unread'];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results;
     } catch (error) {
@@ -28,11 +33,15 @@ class Notification {
         error
       );
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
   // 사용자 ID를 받아서 읽은 알림 목록을 리턴하는 메서드
   static async getReadNotifications(userID: number): Promise<RowDataPacket[]> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -45,12 +54,17 @@ class Notification {
           status = ?;
       `;
       const params = [userID, 'read'];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results;
     } catch (error) {
       console.error(`Error fetching read notification list: ${userID}`, error);
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
@@ -59,6 +73,8 @@ class Notification {
     userID: number,
     notificationID: number
   ): Promise<number> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         UPDATE
@@ -71,7 +87,10 @@ class Notification {
           id = ?;
       `;
       const params = ['read', userID, notificationID];
-      const [results] = await dbPool.execute<ResultSetHeader>(query, params);
+      const [results] = await dbConnection.execute<ResultSetHeader>(
+        query,
+        params
+      );
 
       return results.affectedRows;
     } catch (error) {
@@ -80,6 +99,8 @@ class Notification {
         error
       );
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 }

@@ -5,6 +5,8 @@ import dbPool from '../config/dbConfig.js';
 class User {
   // 사용자 ID를 받아서 간략한 사용자 정보를 리턴하는 메서드
   static async getUserById(userId: number): Promise<RowDataPacket | null> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -15,17 +17,24 @@ class User {
           id = ?;
       `;
       const params = [userId];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results.length ? results[0] : null;
     } catch (error) {
       console.error(`Error fetching user by ID: ${userId}`, error);
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
   // 사용자 ID를 받아서 마이페이지에서 사용될 사용자 정보를 리턴하는 메서드
   static async getUserInfoById(userId: number): Promise<RowDataPacket | null> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -38,17 +47,24 @@ class User {
           u.id = ?;
       `;
       const params = ['accepted', userId];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results.length ? results[0] : null;
     } catch (error) {
       console.error(`Error fetching user info by ID: ${userId}`, error);
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
   // 사용자 ID를 받아서 사용자를 삭제하는 메서드
   static async deleteUserById(userId: number): Promise<number | null> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
           DELETE
@@ -58,12 +74,17 @@ class User {
             id = ?;
         `;
       const params = [userId];
-      const [results] = await dbPool.execute<ResultSetHeader>(query, params);
+      const [results] = await dbConnection.execute<ResultSetHeader>(
+        query,
+        params
+      );
 
       return results.affectedRows;
     } catch (error) {
       console.error(`Error deleting user by ID: ${userId}`, error);
       throw new Error('Database delete failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
@@ -72,6 +93,8 @@ class User {
     userEmail: string,
     nickname: string
   ): Promise<number | null> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         INSERT INTO user (
@@ -83,17 +106,24 @@ class User {
         );
       `;
       const params = [userEmail, nickname];
-      const [results] = await dbPool.execute<ResultSetHeader>(query, params);
+      const [results] = await dbConnection.execute<ResultSetHeader>(
+        query,
+        params
+      );
 
       return results.insertId || null;
     } catch (error) {
       console.error(`Error creating user with email: ${userEmail}`, error);
       throw new Error('Database insert failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
   // 사용자 이메일을 받아서 이미 존재하는 유저인지 확인하는 메서드
   static async isUserExistsByEmail(email: string): Promise<number | null> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -104,12 +134,17 @@ class User {
           email = ?;
       `;
       const params = [email];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results.length ? results[0].id : null;
     } catch (error) {
       console.error(`Error checking if user exists by email: ${email}`, error);
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
@@ -117,6 +152,8 @@ class User {
   static async isUserExistsByNickname(
     nickname: string
   ): Promise<number | null> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -127,17 +164,24 @@ class User {
           nickname = ?;
       `;
       const params = [nickname];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results.length ? results[0].id : null;
     } catch (error) {
       console.error(`Error checking if nickname exists: ${nickname}`, error);
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
   // 사용자 ID를 받아서 가입된 사용자인지 확인하는 메서드
   static async isUserExistsById(userID: number): Promise<number | null> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -148,12 +192,17 @@ class User {
           id = ?;
       `;
       const params = [userID];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results.length ? results[0].id : null;
     } catch (error) {
       console.error(`Error checking if user exists by id: ${userID}`, error);
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
@@ -162,6 +211,8 @@ class User {
     userID: number,
     nickname: string
   ): Promise<number> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         UPDATE
@@ -172,7 +223,10 @@ class User {
           id = ?;
       `;
       const params = [nickname, userID];
-      const [results] = await dbPool.execute<ResultSetHeader>(query, params);
+      const [results] = await dbConnection.execute<ResultSetHeader>(
+        query,
+        params
+      );
 
       return results.affectedRows;
     } catch (error) {
@@ -181,6 +235,8 @@ class User {
         error
       );
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
@@ -189,6 +245,8 @@ class User {
     userID: number,
     imgURL: string
   ): Promise<number> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
           UPDATE
@@ -199,7 +257,10 @@ class User {
             id = ?;
         `;
       const params = [imgURL, userID];
-      const [results] = await dbPool.execute<ResultSetHeader>(query, params);
+      const [results] = await dbConnection.execute<ResultSetHeader>(
+        query,
+        params
+      );
 
       return results.affectedRows;
     } catch (error) {
@@ -208,6 +269,8 @@ class User {
         error
       );
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
@@ -216,6 +279,8 @@ class User {
     userID: number,
     imgURL: string
   ): Promise<number> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
             UPDATE
@@ -226,7 +291,10 @@ class User {
               id = ?;
           `;
       const params = [imgURL, userID];
-      const [results] = await dbPool.execute<ResultSetHeader>(query, params);
+      const [results] = await dbConnection.execute<ResultSetHeader>(
+        query,
+        params
+      );
 
       return results.affectedRows;
     } catch (error) {
@@ -235,6 +303,8 @@ class User {
         error
       );
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 }
