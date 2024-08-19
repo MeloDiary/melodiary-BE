@@ -4,7 +4,6 @@ import dbPool from '../config/dbConfig.js';
 import Joi from 'joi';
 
 export const getMusicHistory = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
   try {
     const userId = parseInt(req.params.userID, 10);
     const schema = Joi.object({
@@ -21,7 +20,7 @@ export const getMusicHistory = async (req: Request, res: Response) => {
     }
 
     let userQuery = `SELECT id, nickname, profile_img_url FROM user WHERE id=?`;
-    const [userRows] = await dbConnection.execute<RowDataPacket[]>(userQuery, [
+    const [userRows] = await dbPool.execute<RowDataPacket[]>(userQuery, [
       userId
     ]);
     if (userRows.length == 0) {
@@ -41,7 +40,7 @@ export const getMusicHistory = async (req: Request, res: Response) => {
       LIMIT ${limit} OFFSET ${limit * (page - 1)};
 
     `;
-    const [musicRows] = await dbConnection.execute<RowDataPacket[]>(
+    const [musicRows] = await dbPool.execute<RowDataPacket[]>(
       musicQuery,
       [userId]
     );
@@ -57,12 +56,9 @@ export const getMusicHistory = async (req: Request, res: Response) => {
       })
     });
   } catch (error) {
-    await dbConnection.rollback();
     console.error('업데이트 오류:', error);
     res.status(500).json({
       message: 'There is something wrong with the server'
     });
-  } finally {
-    dbConnection.release();
   }
 };

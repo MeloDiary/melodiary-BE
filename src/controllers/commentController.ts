@@ -72,7 +72,6 @@ export const postComment = async (req: Request, res: Response) => {
   }
 };
 export const getComments = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
   try {
     const diaryId = parseInt(req.params.diaryId, 10);
     const { userId } = req.user as JwtPayload;
@@ -88,11 +87,9 @@ export const getComments = async (req: Request, res: Response) => {
       return res.status(400).json({ message: error.details[0].message });
     }
 
-    await dbConnection.beginTransaction();
-
     // 해당 일기에 접근 권한 여부 확인
     const checkQuery = `SELECT user_id, privacy FROM diary WHERE id=?`;
-    const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
+    const [checkRows] = await dbPool.execute<RowDataPacket[]>(
       checkQuery,
       [diaryId]
     );
@@ -110,21 +107,17 @@ export const getComments = async (req: Request, res: Response) => {
 
     const commentQuery = `SELECT * FROM comment WHERE diary_id= ? ORDER BY created_at DESC `;
 
-    const [commentRows] = await dbConnection.execute<ResultSetHeader>(
+    const [commentRows] = await dbPool.execute<ResultSetHeader>(
       commentQuery,
       [diaryId]
     );
 
-    await dbConnection.commit();
     res.status(200).json(commentRows);
   } catch (error) {
-    await dbConnection.rollback();
     console.error('조회 오류:', error);
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  } finally {
-    dbConnection.release();
   }
 };
 export const putComment = async (req: Request, res: Response) => {

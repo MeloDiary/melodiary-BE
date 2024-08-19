@@ -324,7 +324,6 @@ export const deleteDiary = async (req: Request, res: Response) => {
 };
 
 export const getDiary = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
 
   try {
     const diarySchema = Joi.object({
@@ -337,8 +336,6 @@ export const getDiary = async (req: Request, res: Response) => {
       return res.status(400).json({ message: error.details[0].message });
     }
     const { userId } = req.user as JwtPayload;
-
-    dbConnection.beginTransaction();
 
     const query = `
       SELECT 
@@ -364,7 +361,7 @@ export const getDiary = async (req: Request, res: Response) => {
         d.id = ?;
     `;
 
-    const [rows] = await dbConnection.execute<RowDataPacket[]>(query, [
+    const [rows] = await dbPool.execute<RowDataPacket[]>(query, [
       userId,
       diaryId
     ]);
@@ -384,20 +381,15 @@ export const getDiary = async (req: Request, res: Response) => {
 
     const diaryInfo = await convertDiaryInfo(row)
 
-    await dbConnection.commit();
     res.status(200).json(diaryInfo);
   } catch (error) {
-    await dbConnection.rollback();
     console.error('조회 오류:', error);
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  } finally {
-    dbConnection.release();
   }
 };
 export const getLike = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
   try {
     const diarySchema = Joi.object({
       diaryId: Joi.number().required()
@@ -410,11 +402,9 @@ export const getLike = async (req: Request, res: Response) => {
     }
     const { userId } = req.user as JwtPayload;
 
-    await dbConnection.beginTransaction();
-
     // 해당 일기에 접근 권한 여부 확인
     const checkQuery = `SELECT user_id, privacy FROM diary WHERE id=?`;
-    const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
+    const [checkRows] = await dbPool.execute<RowDataPacket[]>(
       checkQuery,
       [diaryId]
     );
@@ -446,20 +436,16 @@ export const getLike = async (req: Request, res: Response) => {
         l.diary_id = ?;
     `;
 
-    const [userRows] = await dbConnection.execute<RowDataPacket[]>(query, [
+    const [userRows] = await dbPool.execute<RowDataPacket[]>(query, [
       diaryId
     ]);
 
-    await dbConnection.commit();
 
     res.status(200).json(userRows);
   } catch (error) {
-    await dbConnection.rollback();
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  } finally {
-    dbConnection.release();
   }
 };
 
@@ -574,7 +560,6 @@ export const deleteLike = async (req: Request, res: Response) => {
 };
 
 export const getCalendar = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
   try {
     const { userId } = req.user as JwtPayload;
     const diarySchema = Joi.object({
@@ -590,14 +575,14 @@ export const getCalendar = async (req: Request, res: Response) => {
     }
     const { userId: mateId, month } = req.query;
     let userQuery = `SELECT id, nickname, profile_img_url FROM user WHERE id=?`;
-    const [userRows] = await dbConnection.execute<RowDataPacket[]>(userQuery, [
+    const [userRows] = await dbPool.execute<RowDataPacket[]>(userQuery, [
       mateId
     ]);
     if (userRows.length == 0) {
       return res.status(404).json({ message: 'Not found that user' });
     }
 
-    await dbConnection.beginTransaction();
+    await dbPool.beginTransaction();
     const startDate = `${month}-01`;
     const endDate = `${month}-31 23:59:59`; // 28일 또는 29일이 아닌 31일로 설정해서 안전하게 다 포함
 
@@ -607,7 +592,7 @@ export const getCalendar = async (req: Request, res: Response) => {
       const checkQuery = `SELECT * FROM mate 
       WHERE status = 'accepted' 
       AND ((requested_user_id = ? AND received_user_id = ?) OR (requested_user_id = ? AND received_user_id = ?))`;
-      const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
+      const [checkRows] = await dbPool.execute<RowDataPacket[]>(
         checkQuery,
         [userId, mateId, mateId, userId]
       );
@@ -622,29 +607,24 @@ export const getCalendar = async (req: Request, res: Response) => {
     FROM diary 
     WHERE ${range}user_id = ? AND created_at BETWEEN ? AND ?`;
 
-    const [calendarResult] = await dbConnection.execute<ResultSetHeader>(
+    const [calendarResult] = await dbPool.execute<ResultSetHeader>(
       calendarQuery,
       [mateId, startDate, endDate]
     );
 
-    await dbConnection.commit();
     res.status(200).json({
       user_profile: userRows[0],
       calendar: calendarResult
     });
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  } finally {
-    dbConnection.release();
   }
 };
 
 export const getMatefeeds = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
   try {
     const { userId } = req.user as JwtPayload;
     const schema = Joi.object({
@@ -659,7 +639,6 @@ export const getMatefeeds = async (req: Request, res: Response) => {
       page = page || 1;
       limit = limit || 5;
     }
-    await dbConnection.beginTransaction();
     const mateQuery = `SELECT requested_user_id AS mate_id 
     FROM mate 
     WHERE status = 'accepted' 
@@ -673,7 +652,7 @@ export const getMatefeeds = async (req: Request, res: Response) => {
     AND requested_user_id = ?
     `;
 
-    const [mateRows] = await dbConnection.execute<RowDataPacket[]>(mateQuery, [
+    const [mateRows] = await dbPool.execute<RowDataPacket[]>(mateQuery, [
       userId,
       userId
     ]);
@@ -711,7 +690,7 @@ export const getMatefeeds = async (req: Request, res: Response) => {
           d.created_at DESC
         LIMIT ${limit} OFFSET ${limit * (page - 1)};
         `;
-      [diaryRows] = await dbConnection.execute<RowDataPacket[]>(diaryQuery, [
+      [diaryRows] = await dbPool.execute<RowDataPacket[]>(diaryQuery, [
         userId,
         mateIds
       ]);
@@ -720,21 +699,16 @@ export const getMatefeeds = async (req: Request, res: Response) => {
       return convertDiaryInfo(row)
     });
 
-    await dbConnection.commit();
     res.status(200).json(diaryInfos);
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  } finally {
-    dbConnection.release();
   }
 };
 
 export const getExplore = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
   try {
     const { userId } = req.user as JwtPayload;
     const schema = Joi.object({
@@ -749,7 +723,6 @@ export const getExplore = async (req: Request, res: Response) => {
       page = page || 1;
       limit = limit || 5;
     }
-    await dbConnection.beginTransaction();
 
     const diaryQuery = `
       SELECT 
@@ -780,7 +753,7 @@ export const getExplore = async (req: Request, res: Response) => {
       LIMIT ${limit} OFFSET ${limit * (page - 1)};
 ;
     `;
-    const [diaryRows] = await dbConnection.execute<RowDataPacket[]>(
+    const [diaryRows] = await dbPool.execute<RowDataPacket[]>(
       diaryQuery,
       [userId]
     );
@@ -789,28 +762,22 @@ export const getExplore = async (req: Request, res: Response) => {
       return convertDiaryInfo(row)
       ;
     });
-    await dbConnection.commit();
     res.status(200).json(result);
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  } finally {
-    dbConnection.release();
   }
 };
 
 export const getMypost = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
   try {
     const { userId } = req.user as JwtPayload;
 
-    await dbConnection.beginTransaction();
 
     let userQuery = `SELECT id, nickname, profile_img_url FROM user WHERE id=?`;
-    const [userRows] = await dbConnection.execute<RowDataPacket[]>(userQuery, [
+    const [userRows] = await dbPool.execute<RowDataPacket[]>(userQuery, [
       userId
     ]);
     if (userRows.length == 0) {
@@ -845,7 +812,7 @@ export const getMypost = async (req: Request, res: Response) => {
         ORDER BY 
           d.created_at DESC;
       `;
-    const [diaryRows] = await dbConnection.execute<RowDataPacket[]>(
+    const [diaryRows] = await dbPool.execute<RowDataPacket[]>(
       diaryQuery,
       [userId, userId]
     );
@@ -854,21 +821,16 @@ export const getMypost = async (req: Request, res: Response) => {
       return convertDiaryInfo(row)
     });
 
-    await dbConnection.commit();
     res.status(200).json(diaryInfos);
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  } finally {
-    dbConnection.release();
   }
 };
 
 export const getMymoods = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
   try {
     const { userId } = req.user as JwtPayload;
     const diarySchema = Joi.object({
@@ -884,25 +846,23 @@ export const getMymoods = async (req: Request, res: Response) => {
     const { month } = req.query;
 
     let userQuery = `SELECT id, nickname, profile_img_url FROM user WHERE id=?`;
-    const [userRows] = await dbConnection.execute<RowDataPacket[]>(userQuery, [
+    const [userRows] = await dbPool.execute<RowDataPacket[]>(userQuery, [
       userId
     ]);
     if (userRows.length == 0) {
       return res.status(404).json({ message: 'Not found that user' });
     }
 
-    await dbConnection.beginTransaction();
     const startDate = `${month}-01`;
     const endDate = `${month}-31 23:59:59`; // 28일 또는 29일이 아닌 31일로 설정해서 안전하게 다 포함
     const query = `SELECT created_at AS date, id AS diary_id, mood FROM diary WHERE user_id = ? AND created_at BETWEEN ? AND ?`;
 
-    const [result] = await dbConnection.execute<ResultSetHeader>(query, [
+    const [result] = await dbPool.execute<ResultSetHeader>(query, [
       userId,
       startDate,
       endDate
     ]);
 
-    await dbConnection.commit();
     const userRow = userRows[0];
     res.status(200).json({
       user_profile: {
@@ -913,13 +873,10 @@ export const getMymoods = async (req: Request, res: Response) => {
       moods: result
     });
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  } finally {
-    dbConnection.release();
   }
 };
 
