@@ -108,7 +108,7 @@ export const getComments = async (req: Request, res: Response) => {
         .json({ message: 'No permission to access the diary' });
     }
 
-    const commentQuery = `SELECT * FROM comment WHERE diary_id= ?`;
+    const commentQuery = `SELECT * FROM comment WHERE diary_id= ? ORDER BY created_at DESC `;
 
     const [commentRows] = await dbConnection.execute<ResultSetHeader>(
       commentQuery,
