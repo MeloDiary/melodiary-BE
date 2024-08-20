@@ -5,6 +5,8 @@ import dbPool from '../config/dbConfig.js';
 class Mate {
   // 사용자 ID를 받아서 친구목록을 리턴하는 메서드
   static async getMateList(userID: number): Promise<RowDataPacket[]> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -21,12 +23,17 @@ class Mate {
           m.status = ?;
       `;
       const params = [userID, userID, userID, 'accepted'];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results;
     } catch (error) {
       console.error(`Error fetching mate list: ${userID}`, error);
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
@@ -35,6 +42,8 @@ class Mate {
     requestedUserID: number,
     receivedUserID: number
   ): Promise<number | null> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -55,7 +64,10 @@ class Mate {
         requestedUserID,
         'accepted'
       ];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results.length ? results[0].id : null;
     } catch (error) {
@@ -64,6 +76,8 @@ class Mate {
         error
       );
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
@@ -72,6 +86,8 @@ class Mate {
     requestedUserID: number,
     receivedUserID: number
   ): Promise<number> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         INSERT INTO mate (
@@ -83,7 +99,10 @@ class Mate {
         );
       `;
       const params = [requestedUserID, receivedUserID];
-      const [results] = await dbPool.execute<ResultSetHeader>(query, params);
+      const [results] = await dbConnection.execute<ResultSetHeader>(
+        query,
+        params
+      );
 
       return results.insertId;
     } catch (error) {
@@ -100,6 +119,8 @@ class Mate {
         );
         throw new Error('Database insert failed');
       }
+    } finally {
+      dbConnection.release();
     }
   }
 
@@ -108,6 +129,8 @@ class Mate {
     requestedUserID: number,
     receivedUserID: number
   ): Promise<number> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         DELETE
@@ -127,7 +150,10 @@ class Mate {
         requestedUserID,
         'accepted'
       ];
-      const [results] = await dbPool.execute<ResultSetHeader>(query, params);
+      const [results] = await dbConnection.execute<ResultSetHeader>(
+        query,
+        params
+      );
 
       return results.affectedRows;
     } catch (error) {
@@ -136,6 +162,8 @@ class Mate {
         error
       );
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
@@ -143,6 +171,8 @@ class Mate {
   static async getReceivedMateRequest(
     userID: number
   ): Promise<RowDataPacket[]> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -157,17 +187,24 @@ class Mate {
           m.status = ?;
       `;
       const params = [userID, 'pending'];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results;
     } catch (error) {
       console.error(`Error fetching received mate requests: ${userID}`, error);
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
   // 사용자 ID를 받아서 보낸 친구 요청 목록을 리턴하는 메서드
   static async getSentMateRequest(userID: number): Promise<RowDataPacket[]> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         SELECT
@@ -182,17 +219,24 @@ class Mate {
           m.status = ?;
       `;
       const params = [userID, 'pending'];
-      const [results] = await dbPool.execute<RowDataPacket[]>(query, params);
+      const [results] = await dbConnection.execute<RowDataPacket[]>(
+        query,
+        params
+      );
 
       return results;
     } catch (error) {
       console.error(`Error fetching sent mate requests: ${userID}`, error);
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
   // 사용자 ID와 친구 요청 ID를 받아서 친구 요청을 수락 처리하는 메서드
   static async acceptMate(userID: number, requestID: number): Promise<number> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         UPDATE
@@ -207,7 +251,10 @@ class Mate {
           status = ?;
       `;
       const params = ['accepted', userID, requestID, 'pending'];
-      const [results] = await dbPool.execute<ResultSetHeader>(query, params);
+      const [results] = await dbConnection.execute<ResultSetHeader>(
+        query,
+        params
+      );
 
       return results.affectedRows;
     } catch (error) {
@@ -216,11 +263,15 @@ class Mate {
         error
       );
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 
   // 사용자 ID와 친구 요청 ID를 받아서 친구 요청을 거절 처리하는 메서드
   static async rejectMate(userID: number, requestID: number): Promise<number> {
+    const dbConnection = await dbPool.getConnection();
+
     try {
       const query = `
         DELETE
@@ -234,7 +285,10 @@ class Mate {
           status = ?;
       `;
       const params = [userID, requestID, 'pending'];
-      const [results] = await dbPool.execute<ResultSetHeader>(query, params);
+      const [results] = await dbConnection.execute<ResultSetHeader>(
+        query,
+        params
+      );
 
       return results.affectedRows;
     } catch (error) {
@@ -243,6 +297,8 @@ class Mate {
         error
       );
       throw new Error('Database query failed');
+    } finally {
+      dbConnection.release();
     }
   }
 }
