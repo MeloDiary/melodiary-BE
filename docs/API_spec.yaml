@@ -3334,7 +3334,7 @@ components:
     CommentInfo:
       type: object
       properties:
-        writter_user_profile:
+        writer_user_profile:
           $ref: '#/components/schemas/ProfileInfo'
           description: 댓글 작성자 프로필
         mentioned_user_profile:
