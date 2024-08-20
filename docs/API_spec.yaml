@@ -3354,7 +3354,7 @@ components:
           type: string
           description: 댓글 내용
         mentioned_user_id:
-          type: string
+          type: integer
           description: 멘션된 유저 ID
 
     CommentID:
