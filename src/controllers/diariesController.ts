@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import dbPool from '../config/dbConfig.js';
 import { IPostDiary } from '../types/diary';
 import { JwtPayload } from 'jsonwebtoken';
+import { generateGetPresignedUrl } from '../utils/s3Utils.js';
 import Joi from 'joi';
 
 export const postDiary = async (req: Request, res: Response) => {
@@ -24,7 +25,7 @@ export const postDiary = async (req: Request, res: Response) => {
     const diarySchema = Joi.object({
       title: Joi.string().required(),
       content: Joi.string().required(),
-      img_urls: Joi.array().items(Joi.string().uri()).optional(),
+      img_urls: Joi.array().items(Joi.string()).optional(),
       mood: Joi.string().optional(),
       emoji: Joi.string().optional(),
       privacy: Joi.string().valid('public', 'private', 'mate').optional(),
@@ -43,7 +44,8 @@ export const postDiary = async (req: Request, res: Response) => {
 
     const { error } = diarySchema.validate(req.body);
     if (error) {
-      return res.status(400).json({ message: error.details[0].message });
+      throw new Error(error.details[0].message);
+      //res.status(400).json({ message: error.details[0].message });
     }
 
     const { userId } = req.user as JwtPayload;
@@ -337,8 +339,6 @@ export const getDiary = async (req: Request, res: Response) => {
     }
     const { userId } = req.user as JwtPayload;
 
-    dbConnection.beginTransaction();
-
     const query = `
       SELECT 
         d.*,
@@ -381,45 +381,10 @@ export const getDiary = async (req: Request, res: Response) => {
         .json({ message: 'No permission to access the diary' });
     }
 
-    const result = {
-      id: row.id,
-      user_profile: {
-        user_id: row.user_id,
-        profile_img_url: row.profile_img_url,
-        nickname: row.nickname
-      },
-      like_count: row.like_count,
-      created_at: row.created_at,
-      body: {
-        title: row.title,
-        content: row.content,
-        img_urls: row.img_urls ? row.img_urls.split(',') : [],
-        mood: row.mood,
-        emoji: row.emoji,
-        privacy: row.privacy,
-        music: row.music_url
-          ? {
-              music_url: row.music_url,
-              title: row.music_title,
-              artist: row.music_artist
-            }
-          : null,
-        weather: row.location
-          ? {
-              location: row.location,
-              icon: row.weather_icon,
-              avg_temperature: row.avg_temperature
-            }
-          : null,
-        background_color: row.background_color
-      },
-      liked: Boolean(row.liked)
-    };
+    const diaryInfo = await convertDiaryInfo(row);
 
-    await dbConnection.commit();
-    res.status(200).json(result);
+    res.status(200).json(diaryInfo);
   } catch (error) {
-    await dbConnection.rollback();
     console.error('조회 오류:', error);
     res
       .status(500)
@@ -430,6 +395,7 @@ export const getDiary = async (req: Request, res: Response) => {
 };
 export const getLike = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
+
   try {
     const diarySchema = Joi.object({
       diaryId: Joi.number().required()
@@ -441,8 +407,6 @@ export const getLike = async (req: Request, res: Response) => {
       return res.status(400).json({ message: error.details[0].message });
     }
     const { userId } = req.user as JwtPayload;
-
-    await dbConnection.beginTransaction();
 
     // 해당 일기에 접근 권한 여부 확인
     const checkQuery = `SELECT user_id, privacy FROM diary WHERE id=?`;
@@ -482,11 +446,8 @@ export const getLike = async (req: Request, res: Response) => {
       diaryId
     ]);
 
-    await dbConnection.commit();
-
     res.status(200).json(userRows);
   } catch (error) {
-    await dbConnection.rollback();
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
@@ -607,6 +568,7 @@ export const deleteLike = async (req: Request, res: Response) => {
 
 export const getCalendar = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
+
   try {
     const { userId } = req.user as JwtPayload;
     const diarySchema = Joi.object({
@@ -629,7 +591,7 @@ export const getCalendar = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Not found that user' });
     }
 
-    await dbConnection.beginTransaction();
+    await dbPool.beginTransaction();
     const startDate = `${month}-01`;
     const endDate = `${month}-31 23:59:59`; // 28일 또는 29일이 아닌 31일로 설정해서 안전하게 다 포함
 
@@ -659,15 +621,13 @@ export const getCalendar = async (req: Request, res: Response) => {
       [mateId, startDate, endDate]
     );
 
-    await dbConnection.commit();
     res.status(200).json({
       user_profile: userRows[0],
       calendar: calendarResult
     });
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -677,6 +637,7 @@ export const getCalendar = async (req: Request, res: Response) => {
 
 export const getMatefeeds = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
+
   try {
     const { userId } = req.user as JwtPayload;
     const schema = Joi.object({
@@ -691,7 +652,6 @@ export const getMatefeeds = async (req: Request, res: Response) => {
       page = page || 1;
       limit = limit || 5;
     }
-    await dbConnection.beginTransaction();
     const mateQuery = `SELECT requested_user_id AS mate_id 
     FROM mate 
     WHERE status = 'accepted' 
@@ -748,49 +708,16 @@ export const getMatefeeds = async (req: Request, res: Response) => {
         mateIds
       ]);
     }
-    const result = diaryRows.map((row) => {
-      return {
-        id: row.id,
-        user_profile: {
-          user_id: row.user_id,
-          profile_img_url: row.profile_img_url,
-          nickname: row.nickname
-        },
-        like_count: row.like_count,
-        created_at: row.created_at,
-        body: {
-          title: row.title,
-          content: row.content,
-          img_urls: row.img_urls ? row.img_urls.split(',') : [],
-          mood: row.mood,
-          emoji: row.emoji,
-          privacy: row.privacy,
-          music: row.music_url
-            ? {
-                music_url: row.music_url,
-                title: row.music_title,
-                artist: row.music_artist
-              }
-            : null,
-          weather: row.location
-            ? {
-                location: row.location,
-                icon: row.weather_icon,
-                avg_temperature: row.avg_temperature
-              }
-            : null,
-          background_color: row.background_color
-        },
-        liked: Boolean(row.liked)
-      };
-    });
+    const diaryInfos = await Promise.all(
+      diaryRows.map((row) => {
+        return convertDiaryInfo(row);
+      })
+    );
 
-    await dbConnection.commit();
-    res.status(200).json(result);
+    res.status(200).json(diaryInfos);
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -800,6 +727,7 @@ export const getMatefeeds = async (req: Request, res: Response) => {
 
 export const getExplore = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
+
   try {
     const { userId } = req.user as JwtPayload;
     const schema = Joi.object({
@@ -814,7 +742,6 @@ export const getExplore = async (req: Request, res: Response) => {
       page = page || 1;
       limit = limit || 5;
     }
-    await dbConnection.beginTransaction();
 
     const diaryQuery = `
       SELECT 
@@ -849,49 +776,16 @@ export const getExplore = async (req: Request, res: Response) => {
       diaryQuery,
       [userId]
     );
+    const result = await Promise.all(
+      diaryRows.map((row) => {
+        return convertDiaryInfo(row);
+      })
+    );
 
-    const result = diaryRows.map((row) => {
-      return {
-        id: row.id,
-        user_profile: {
-          user_id: row.user_id,
-          profile_img_url: row.profile_img_url,
-          nickname: row.nickname
-        },
-        like_count: row.like_count,
-        created_at: row.created_at,
-        body: {
-          title: row.title,
-          content: row.content,
-          img_urls: row.img_urls ? row.img_urls.split(',') : [],
-          mood: row.mood,
-          emoji: row.emoji,
-          privacy: row.privacy,
-          music: row.music_url
-            ? {
-                music_url: row.music_url,
-                title: row.music_title,
-                artist: row.music_artist
-              }
-            : null,
-          weather: row.location
-            ? {
-                location: row.location,
-                icon: row.weather_icon,
-                avg_temperature: row.avg_temperature
-              }
-            : null,
-          background_color: row.background_color
-        },
-        liked: Boolean(row.liked)
-      };
-    });
-    await dbConnection.commit();
     res.status(200).json(result);
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -901,10 +795,9 @@ export const getExplore = async (req: Request, res: Response) => {
 
 export const getMypost = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
+
   try {
     const { userId } = req.user as JwtPayload;
-
-    await dbConnection.beginTransaction();
 
     let userQuery = `SELECT id, nickname, profile_img_url FROM user WHERE id=?`;
     const [userRows] = await dbConnection.execute<RowDataPacket[]>(userQuery, [
@@ -947,46 +840,14 @@ export const getMypost = async (req: Request, res: Response) => {
       [userId, userId]
     );
 
-    const result = diaryRows.map((row) => {
-      return {
-        id: row.id,
-        user_profile: {
-          user_id: row.user_id,
-          profile_img_url: row.profile_img_url,
-          nickname: row.nickname
-        },
-        like_count: row.like_count,
-        created_at: row.created_at,
-        body: {
-          title: row.title,
-          content: row.content,
-          img_urls: row.img_urls ? row.img_urls.split(',') : [],
-          mood: row.mood,
-          emoji: row.emoji,
-          privacy: row.privacy,
-          music: row.music_url
-            ? {
-                music_url: row.music_url,
-                title: row.music_title,
-                artist: row.music_artist
-              }
-            : null,
-          weather: row.location
-            ? {
-                location: row.location,
-                icon: row.weather_icon,
-                avg_temperature: row.avg_temperature
-              }
-            : null,
-          background_color: row.background_color
-        },
-        liked: Boolean(row.liked)
-      };
-    });
-    await dbConnection.commit();
-    res.status(200).json(result);
+    const diaryInfos = await Promise.all(
+      diaryRows.map((row) => {
+        return convertDiaryInfo(row);
+      })
+    );
+
+    res.status(200).json(diaryInfos);
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
     res
       .status(500)
@@ -998,6 +859,7 @@ export const getMypost = async (req: Request, res: Response) => {
 
 export const getMymoods = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
+
   try {
     const { userId } = req.user as JwtPayload;
     const diarySchema = Joi.object({
@@ -1020,7 +882,6 @@ export const getMymoods = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Not found that user' });
     }
 
-    await dbConnection.beginTransaction();
     const startDate = `${month}-01`;
     const endDate = `${month}-31 23:59:59`; // 28일 또는 29일이 아닌 31일로 설정해서 안전하게 다 포함
     const query = `SELECT created_at AS date, id AS diary_id, mood FROM diary WHERE user_id = ? AND created_at BETWEEN ? AND ?`;
@@ -1031,7 +892,6 @@ export const getMymoods = async (req: Request, res: Response) => {
       endDate
     ]);
 
-    await dbConnection.commit();
     const userRow = userRows[0];
     res.status(200).json({
       user_profile: {
@@ -1042,7 +902,6 @@ export const getMymoods = async (req: Request, res: Response) => {
       moods: result
     });
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
     res
       .status(500)
@@ -1080,5 +939,58 @@ const checkAccessAuth = async (
     }
   } catch {
     throw new Error('mate 테이블 참조 불가 오류 발생');
+  } finally {
+    dbConnection.release();
   }
+};
+
+const convertDiaryInfo = async (row: any) => {
+  const profileImgURL = row.profile_img_url
+    ? await generateGetPresignedUrl(row.profile_img_url)
+    : null;
+
+  const diaryImgUrls = row.img_urls
+    ? await Promise.all(
+        row.img_urls.split(',').map((url: string) => {
+          return generateGetPresignedUrl(url);
+        })
+      )
+    : [];
+
+  const result = {
+    id: row.id,
+    user_profile: {
+      user_id: row.user_id,
+      profile_img_url: profileImgURL,
+      nickname: row.nickname
+    },
+    like_count: row.like_count,
+    created_at: row.created_at,
+    body: {
+      title: row.title,
+      content: row.content,
+      img_urls: diaryImgUrls,
+      mood: row.mood,
+      emoji: row.emoji,
+      privacy: row.privacy,
+      music: row.music_url
+        ? {
+            music_url: row.music_url,
+            title: row.music_title,
+            artist: row.music_artist
+          }
+        : null,
+      weather: row.location
+        ? {
+            location: row.location,
+            icon: row.weather_icon,
+            avg_temperature: row.avg_temperature
+          }
+        : null,
+      background_color: row.background_color
+    },
+    liked: Boolean(row.liked)
+  };
+
+  return result;
 };

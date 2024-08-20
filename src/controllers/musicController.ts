@@ -5,6 +5,7 @@ import Joi from 'joi';
 
 export const getMusicHistory = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
+
   try {
     const userId = parseInt(req.params.userID, 10);
     const schema = Joi.object({
@@ -57,7 +58,6 @@ export const getMusicHistory = async (req: Request, res: Response) => {
       })
     });
   } catch (error) {
-    await dbConnection.rollback();
     console.error('업데이트 오류:', error);
     res.status(500).json({
       message: 'There is something wrong with the server'
