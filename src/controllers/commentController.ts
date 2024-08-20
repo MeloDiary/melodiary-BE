@@ -89,10 +89,9 @@ export const getComments = async (req: Request, res: Response) => {
 
     // 해당 일기에 접근 권한 여부 확인
     const checkQuery = `SELECT user_id, privacy FROM diary WHERE id=?`;
-    const [checkRows] = await dbPool.execute<RowDataPacket[]>(
-      checkQuery,
-      [diaryId]
-    );
+    const [checkRows] = await dbPool.execute<RowDataPacket[]>(checkQuery, [
+      diaryId
+    ]);
     const checkRow = checkRows[0];
     const checkAuth = await checkAccessAuth(
       userId,
@@ -107,10 +106,9 @@ export const getComments = async (req: Request, res: Response) => {
 
     const commentQuery = `SELECT * FROM comment WHERE diary_id= ? ORDER BY created_at DESC `;
 
-    const [commentRows] = await dbPool.execute<ResultSetHeader>(
-      commentQuery,
-      [diaryId]
-    );
+    const [commentRows] = await dbPool.execute<ResultSetHeader>(commentQuery, [
+      diaryId
+    ]);
 
     res.status(200).json(commentRows);
   } catch (error) {
@@ -260,5 +258,15 @@ const checkAccessAuth = async (
     }
   } catch {
     throw new Error('mate 테이블 참조 불가 오류 발생');
+  }
+};
+
+const validateUser = async (userId: string | number) => {
+  const query = `SELECT id,nickname,profile_img_url FROM user WHERE id=?`;
+  const [rows] = await dbPool.execute<RowDataPacket[]>(query, [userId]);
+  if (rows.length == 0) {
+    return rows[0];
+  } else {
+    return undefined;
   }
 };
