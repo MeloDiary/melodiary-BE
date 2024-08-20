@@ -1,7 +1,12 @@
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { Request, Response } from 'express';
 import dbPool from '../config/dbConfig.js';
-import { IComment,IPostComment, IUserProfile, IUserProfileRowDataPacket } from '../types/comment.js';
+import {
+  IComment,
+  IPostComment,
+  IUserProfile,
+  IUserProfileRowDataPacket
+} from '../types/comment.js';
 import { JwtPayload } from 'jsonwebtoken';
 import Joi from 'joi';
 
@@ -49,16 +54,18 @@ export const postComment = async (req: Request, res: Response) => {
     }
 
     const writerUser = validateUser(userId);
-    const mentionedUser = mentioned_user_id ? validateUser(mentioned_user_id) : null;
-    if(writerUser==undefined){
+    const mentionedUser = mentioned_user_id
+      ? validateUser(mentioned_user_id)
+      : null;
+    if (writerUser == undefined) {
       return res
-      .status(500)
-      .json({ message: `Not found that user (userId : ${userId})` });
+        .status(500)
+        .json({ message: `Not found that user (userId : ${userId})` });
     }
-    if(mentioned_user_id && mentionedUser==undefined){
-      return res
-      .status(404)
-      .json({ message: `Not found that user (userId : ${mentioned_user_id})` });
+    if (mentioned_user_id && mentionedUser == undefined) {
+      return res.status(404).json({
+        message: `Not found that user (userId : ${mentioned_user_id})`
+      });
     }
 
     const commentQuery = `INSERT INTO comment (content, writer_user_id, mentioned_user_id,diary_id) 
@@ -85,6 +92,8 @@ export const postComment = async (req: Request, res: Response) => {
   }
 };
 export const getComments = async (req: Request, res: Response) => {
+  const dbConnection = await dbPool.getConnection();
+
   try {
     const diaryId = parseInt(req.params.diaryId, 10);
     const { userId } = req.user as JwtPayload;
@@ -102,9 +111,10 @@ export const getComments = async (req: Request, res: Response) => {
 
     // 해당 일기에 접근 권한 여부 확인
     const checkQuery = `SELECT user_id, privacy FROM diary WHERE id=?`;
-    const [checkRows] = await dbPool.execute<RowDataPacket[]>(checkQuery, [
-      diaryId
-    ]);
+    const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
+      checkQuery,
+      [diaryId]
+    );
     const checkRow = checkRows[0];
     const checkAuth = await checkAccessAuth(
       userId,
@@ -117,41 +127,42 @@ export const getComments = async (req: Request, res: Response) => {
         .json({ message: 'No permission to access the diary' });
     }
 
-
     const commentQuery = `SELECT * FROM comment WHERE diary_id= ? ORDER BY created_at DESC `;
 
-    const [commentRows] = await dbPool.execute<IComment[]>(commentQuery, [
+    const [commentRows] = await dbConnection.execute<IComment[]>(commentQuery, [
       diaryId
     ]);
 
     const resultRows = await Promise.all(
-      commentRows.map(
-        async (row:IComment)=> {
+      commentRows.map(async (row: IComment) => {
+        let writerUser = await validateUser(row.writer_user_id);
+        let mentionedUser = row.mentioned_user_id
+          ? await validateUser(row.mentioned_user_id)
+          : {};
+        if (writerUser == undefined) {
+          writerUser = getInvalidUser(row.writer_user_id);
+        }
+        if (row.mentioned_user_id && mentionedUser == undefined) {
+          mentionedUser = getInvalidUser(row.mentioned_user_id);
+        }
 
-      let writerUser = await validateUser(row.writer_user_id)
-      let mentionedUser = row.mentioned_user_id ? await validateUser(row.mentioned_user_id) : {}
-      if(writerUser==undefined){
-        writerUser = getInvalidUser(row.writer_user_id)
-      }
-      if(row.mentioned_user_id && mentionedUser==undefined){
-        mentionedUser = getInvalidUser(row.mentioned_user_id)
-      }
-
-      return {
-        writer_user_profile: writerUser,
-        diary_id: row.diary_id,
-        mentioned_user_profile: mentionedUser,
-        content: row.content,
-        created_at: row.created_at,
-      }
-    })
-  );
+        return {
+          writer_user_profile: writerUser,
+          diary_id: row.diary_id,
+          mentioned_user_profile: mentionedUser,
+          content: row.content,
+          created_at: row.created_at
+        };
+      })
+    );
     res.status(200).json(resultRows);
   } catch (error) {
     console.error('조회 오류:', error);
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
+  } finally {
+    dbConnection.release();
   }
 };
 export const putComment = async (req: Request, res: Response) => {
@@ -193,19 +204,20 @@ export const putComment = async (req: Request, res: Response) => {
         .json({ message: 'No permission to access the comment' });
     }
 
-    const writerUser = validateUser(userId)
-    const mentionedUser = mentioned_user_id ? validateUser(mentioned_user_id) : null;
-    if(writerUser==undefined){
+    const writerUser = validateUser(userId);
+    const mentionedUser = mentioned_user_id
+      ? validateUser(mentioned_user_id)
+      : null;
+    if (writerUser == undefined) {
       return res
-      .status(500)
-      .json({ message: `Not found that user (userId : ${userId})` });
+        .status(500)
+        .json({ message: `Not found that user (userId : ${userId})` });
     }
-    if(mentioned_user_id && mentionedUser==undefined){
-      return res
-      .status(404)
-      .json({ message: `Not found that user (userId : ${mentioned_user_id})` });
+    if (mentioned_user_id && mentionedUser == undefined) {
+      return res.status(404).json({
+        message: `Not found that user (userId : ${mentioned_user_id})`
+      });
     }
-
 
     const commentQuery = `UPDATE comment SET content =?, mentioned_user_id=? 
                       WHERE id=?`;
@@ -308,29 +320,39 @@ const checkAccessAuth = async (
     }
   } catch {
     throw new Error('mate 테이블 참조 불가 오류 발생');
+  } finally {
+    dbConnection.release();
   }
 };
 
-
-const validateUser = async (userId: string | number): Promise<IUserProfile|undefined> => {
-  const query = `SELECT id as user_id,nickname,profile_img_url FROM user WHERE id=?`;
-  const [rows] = await dbPool.execute<IUserProfileRowDataPacket[]>(query, [userId]);
-  if (rows.length > 0) {
-    return {
-      user_id: Number(userId),
-      nickname: rows[0].nickname,
-      profile_img_url: rows[0].profile_img_url
-    };
-  } else {
-    return undefined;
+const validateUser = async (
+  userId: string | number
+): Promise<IUserProfile | undefined> => {
+  const dbConnection = await dbPool.getConnection();
+  try {
+    const query = `SELECT id as user_id,nickname,profile_img_url FROM user WHERE id=?`;
+    const [rows] = await dbPool.execute<IUserProfileRowDataPacket[]>(query, [
+      userId
+    ]);
+    if (rows.length > 0) {
+      return {
+        user_id: Number(userId),
+        nickname: rows[0].nickname,
+        profile_img_url: rows[0].profile_img_url
+      };
+    } else {
+      return undefined;
+    }
+  } finally {
+    dbConnection.release();
   }
 };
 
-const getInvalidUser= (userId: number):IUserProfile => {
-  const userProfile : IUserProfile = {
+const getInvalidUser = (userId: number): IUserProfile => {
+  const userProfile: IUserProfile = {
     user_id: userId,
-    nickname: "Invalid User",
-    profile_img_url: ""
-  }
+    nickname: 'Invalid User',
+    profile_img_url: ''
+  };
   return userProfile;
-}
+};

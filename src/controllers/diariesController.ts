@@ -389,8 +389,7 @@ export const getDiary = async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  }
-  finally{
+  } finally {
     dbConnection.release();
   }
 };
@@ -411,9 +410,10 @@ export const getLike = async (req: Request, res: Response) => {
 
     // 해당 일기에 접근 권한 여부 확인
     const checkQuery = `SELECT user_id, privacy FROM diary WHERE id=?`;
-    const [checkRows] = await dbConnection.execute<RowDataPacket[]>(checkQuery, [
-      diaryId
-    ]);
+    const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
+      checkQuery,
+      [diaryId]
+    );
 
     if (checkRows.length === 0) {
       return res.status(404).json({ message: 'Not Found that diary' });
@@ -442,14 +442,18 @@ export const getLike = async (req: Request, res: Response) => {
         l.diary_id = ?;
     `;
 
-    const [userRows] = await dbConnection.execute<RowDataPacket[]>(query, [diaryId]);
+    const [userRows] = await dbConnection.execute<RowDataPacket[]>(query, [
+      diaryId
+    ]);
 
     res.status(200).json(userRows);
   } catch (error) {
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  }finally{dbConnection.release();}
+  } finally {
+    dbConnection.release();
+  }
 };
 
 export const postLike = async (req: Request, res: Response) => {
@@ -597,12 +601,10 @@ export const getCalendar = async (req: Request, res: Response) => {
       const checkQuery = `SELECT * FROM mate 
       WHERE status = 'accepted' 
       AND ((requested_user_id = ? AND received_user_id = ?) OR (requested_user_id = ? AND received_user_id = ?))`;
-      const [checkRows] = await dbConnection.execute<RowDataPacket[]>(checkQuery, [
-        userId,
-        mateId,
-        mateId,
-        userId
-      ]);
+      const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
+        checkQuery,
+        [userId, mateId, mateId, userId]
+      );
       if (checkRows.length > 0) {
         range = `privacy IN ('public','mate') AND `;
       } else {
@@ -628,7 +630,9 @@ export const getCalendar = async (req: Request, res: Response) => {
     return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  }finally{dbConnection.release();}
+  } finally {
+    dbConnection.release();
+  }
 };
 
 export const getMatefeeds = async (req: Request, res: Response) => {
@@ -704,9 +708,11 @@ export const getMatefeeds = async (req: Request, res: Response) => {
         mateIds
       ]);
     }
-    const diaryInfos = diaryRows.map((row) => {
-      return convertDiaryInfo(row);
-    });
+    const diaryInfos = await Promise.all(
+      diaryRows.map((row) => {
+        return convertDiaryInfo(row);
+      })
+    );
 
     res.status(200).json(diaryInfos);
   } catch (error) {
@@ -714,7 +720,9 @@ export const getMatefeeds = async (req: Request, res: Response) => {
     return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  }finally{dbConnection.release();}
+  } finally {
+    dbConnection.release();
+  }
 };
 
 export const getExplore = async (req: Request, res: Response) => {
@@ -764,20 +772,25 @@ export const getExplore = async (req: Request, res: Response) => {
       LIMIT ${limit} OFFSET ${limit * (page - 1)};
 ;
     `;
-    const [diaryRows] = await dbConnection.execute<RowDataPacket[]>(diaryQuery, [
-      userId
-    ]);
+    const [diaryRows] = await dbConnection.execute<RowDataPacket[]>(
+      diaryQuery,
+      [userId]
+    );
+    const result = await Promise.all(
+      diaryRows.map((row) => {
+        return convertDiaryInfo(row);
+      })
+    );
 
-    const result = diaryRows.map((row) => {
-      return convertDiaryInfo(row);
-    });
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
     return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  }finally{dbConnection.release();}
+  } finally {
+    dbConnection.release();
+  }
 };
 
 export const getMypost = async (req: Request, res: Response) => {
@@ -822,14 +835,16 @@ export const getMypost = async (req: Request, res: Response) => {
         ORDER BY 
           d.created_at DESC;
       `;
-    const [diaryRows] = await dbConnection.execute<RowDataPacket[]>(diaryQuery, [
-      userId,
-      userId
-    ]);
+    const [diaryRows] = await dbConnection.execute<RowDataPacket[]>(
+      diaryQuery,
+      [userId, userId]
+    );
 
-    const diaryInfos = diaryRows.map((row) => {
-      return convertDiaryInfo(row);
-    });
+    const diaryInfos = await Promise.all(
+      diaryRows.map((row) => {
+        return convertDiaryInfo(row);
+      })
+    );
 
     res.status(200).json(diaryInfos);
   } catch (error) {
@@ -837,7 +852,9 @@ export const getMypost = async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  }finally{dbConnection.release();}
+  } finally {
+    dbConnection.release();
+  }
 };
 
 export const getMymoods = async (req: Request, res: Response) => {
@@ -889,7 +906,9 @@ export const getMymoods = async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
-  }finally{dbConnection.release();}
+  } finally {
+    dbConnection.release();
+  }
 };
 
 const checkAccessAuth = async (
@@ -920,6 +939,8 @@ const checkAccessAuth = async (
     }
   } catch {
     throw new Error('mate 테이블 참조 불가 오류 발생');
+  } finally {
+    dbConnection.release();
   }
 };
 
@@ -929,9 +950,11 @@ const convertDiaryInfo = async (row: any) => {
     : null;
 
   const diaryImgUrls = row.img_urls
-    ? await row.img_urls.split(',').map((url: string) => {
-        return generateGetPresignedUrl(url);
-      })
+    ? await Promise.all(
+        row.img_urls.split(',').map((url: string) => {
+          return generateGetPresignedUrl(url);
+        })
+      )
     : [];
 
   const result = {
