@@ -26,7 +26,7 @@ FOR EACH ROW
 BEGIN
     INSERT INTO notification (content, user_id, diary_id, category)
     VALUES (
-        CONCAT((SELECT nickname FROM user WHERE id = NEW.writter_user_id), '님이 일기에 댓글을 작성했습니다.'),
+        CONCAT((SELECT nickname FROM user WHERE id = NEW.writer_user_id), '님이 일기에 댓글을 작성했습니다.'),
         (SELECT user_id FROM diary WHERE id = NEW.diary_id),
         NEW.diary_id,
         'diary'
@@ -57,7 +57,7 @@ BEGIN
     IF NEW.mentioned_user_id IS NOT NULL THEN
         INSERT INTO notification (content, user_id, diary_id, category)
         VALUES (
-            CONCAT((SELECT nickname FROM user WHERE id = NEW.writter_user_id), '님이 회원님을 멘션했습니다.'),
+            CONCAT((SELECT nickname FROM user WHERE id = NEW.writer_user_id), '님이 회원님을 멘션했습니다.'),
             NEW.mentioned_user_id,
             NEW.diary_id,
             'diary'

@@ -2408,7 +2408,7 @@ paths:
                 type: object
                 properties:
                   user_profile:
-                      $ref: '#/components/schemas/ProfileInfo'
+                    $ref: '#/components/schemas/ProfileInfo'
                   calendar:
                     type: array
                     items:
@@ -2468,7 +2468,7 @@ paths:
         - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/Limit'        
+        - $ref: '#/components/parameters/Limit'
       responses:
         '200':
           description: 친구들의 일기 최신순 조회
@@ -2517,7 +2517,7 @@ paths:
         - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/Limit'   
+        - $ref: '#/components/parameters/Limit'
       responses:
         '200':
           description: 전체 공개 글 피드 조회
@@ -2966,7 +2966,6 @@ paths:
                   - $ref: '#/components/schemas/Message'
                 example:
                   message: 'There is something wrong with the server'
-  
 
   /api/users/{userID}/music:
     get:
@@ -2976,7 +2975,7 @@ paths:
       summary: 음악 사용기록 조회
       description: |
         ?page=(페이지번호,기본값:1)&limit=(가져올row수, 기본값:5)
-  
+
         음악정보 조회에 성공한 경우 200코드와 친구 관계나 privacy에 상관 없이 모든 음악 정보를 리턴합니다.
 
         유저가 존재하지 않는 경우 404 코드를 리턴합니다.
@@ -2985,7 +2984,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/UserID'
         - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/Limit' 
+        - $ref: '#/components/parameters/Limit'
       responses:
         '200':
           description: 일기 음악 정보
@@ -3007,9 +3006,6 @@ paths:
                               type: string
                               format: date
 
-                              
-
-
         '400':
           description: 잘못된 요청
           content:
@@ -3026,13 +3022,13 @@ paths:
                 example:
                   message: 'There is something wrong with the server'
 
-  /api/aws/presigned-url:
+  /api/aws/images:
     post:
       tags:
         - AWS
-      summary: 프리사인드 URL 요청
+      summary: S3 버킷 이미지 업로드 요청
       description: |
-        프리사인드 URL 생성에 성공한 경우 200 코드와 프리사인드 URL을 리턴합니다.
+        이미지 업로드에 성공한 경우 200 코드와 파일명을 리턴합니다.
 
         요청 구문이 잘못된 경우 400 코드를 리턴합니다.
 
@@ -3043,25 +3039,25 @@ paths:
         - BearerAuth: []
       requestBody:
         description: |
-          이미지 파일 이름
+          파일명 배열
 
-          이미지 파일의 MIME 타입
+          업로드할 이미지 배열
         content:
-          application/json:
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/S3body'
         required: true
       responses:
         '200':
-          description: 프리사인드 URL 생성 성공
+          description: 이미지 업로드 성공
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PresignedURL'
+                $ref: '#/components/schemas/UploadedUrl'
         '400':
           description: 잘못된 요청 구문
           content:
-            applicaiton/json:
+            application/json:
               schema:
                 allOf:
                   - $ref: '#/components/schemas/Message'
@@ -3403,22 +3399,31 @@ components:
     S3body:
       type: object
       properties:
-        file_name:
-          type: string
-          example: 'profile-img-30.jpg'
-        file_type:
-          type: string
-          example: 'image/jpg'
+        filenames:
+          type: array
+          items:
+            type: string
+          description: '파일명 ex) 30/diary/23_1.png, 30/diary/23_2.jpg'
+          example:
+            - 30/diary/23_1.png
+            - 30/diary/23_2.jpg
+        images:
+          type: array
+          items:
+            type: string
+          format: binary
+          description: '업로드할 이미지'
 
-    PresignedURL:
+    UploadedUrl:
       type: object
       properties:
-        presigned_url:
-          type: string
-          example: 'https://melodiary-bucket.s3.amazonaws.com/profile-img-30.jpg?AWSAccessKeyId=AKIA...&Signature=abcd1234...&Expires=1609459200'
-
-
-        
+        img_urls:
+          type: array
+          items:
+            type: string
+          example:
+            - '30/diary/23_1.png'
+            - '30/diary/23_2.jpg'
 
   parameters:
     UserID:
@@ -3532,7 +3537,7 @@ components:
       description: 페이지번호 (기본값 1)
       schema:
         type: number
-        example: 1     
+        example: 1
 
     Limit:
       name: limit
@@ -3540,4 +3545,4 @@ components:
       description: 가져올 row의 수 (기본값 5)
       schema:
         type: number
-        example: 5 
+        example: 5
