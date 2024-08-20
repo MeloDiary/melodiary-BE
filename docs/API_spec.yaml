@@ -3335,11 +3335,11 @@ components:
       type: object
       properties:
         writter_user_profile:
-                $ref: '#/components/schemas/UserProfile'
-                description: 댓글 작성자 프로필
+          $ref: '#/components/schemas/ProfileInfo'
+          description: 댓글 작성자 프로필
         mentioned_user_profile:
-                $ref: '#/components/schemas/MateInfo'       
-                description: 멘션된 유저 프로필
+          $ref: '#/components/schemas/ProfileInfo'       
+          description: 멘션된 유저 프로필
         created_at:
           type: string
           format: date
@@ -3350,7 +3350,7 @@ components:
         content:
           type: string
           description: 댓글 내용
-
+          
     CommentBody:
       type: object
       properties:
@@ -3358,7 +3358,7 @@ components:
           type: string
           description: 댓글 내용
         mentioned_user_id:
-          type: integer
+          type: string
           description: 멘션된 유저 ID
 
     CommentID:
