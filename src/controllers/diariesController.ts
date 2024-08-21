@@ -160,7 +160,7 @@ export const putDiary = async (req: Request, res: Response) => {
     }: IPostDiary = req.body;
     const { userId } = req.user as JwtPayload;
 
-    dbConnection.beginTransaction();
+    await dbConnection.beginTransaction();
     // 수정하려는 일기의 유저 ID와 현재 유저 ID를 비교한 후, 다르면 403(권한없음) 에러를 리턴합니다.
     const checkQuery = `SELECT * FROM diary WHERE id = ?`;
     const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
