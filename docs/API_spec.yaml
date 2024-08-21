@@ -3069,6 +3069,8 @@ paths:
                             created_at:
                               type: string
                               format: date
+                            diary_id:
+                              type: number
 
         '400':
           description: 잘못된 요청
@@ -3440,6 +3442,8 @@ components:
         artist:
           type: string
           example: 'music artist'
+
+          
 
     LocationInfo:
       type: object
