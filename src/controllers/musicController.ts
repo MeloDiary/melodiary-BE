@@ -30,7 +30,7 @@ export const getMusicHistory = async (req: Request, res: Response) => {
     }
 
     const musicQuery = `
-    SELECT
+    SELECT SQL_CALC_FOUND_ROWS
       m.*, d.created_at
       FROM music m
     LEFT JOIN
@@ -46,8 +46,15 @@ export const getMusicHistory = async (req: Request, res: Response) => {
       musicQuery,
       [userId]
     );
+
+    const countQuery = `SELECT FOUND_ROWS() as total`;
+    const [[{ total }]] = await dbConnection.execute<RowDataPacket[]>(
+      countQuery
+    );
+
     return res.status(200).json({
       user_profile: userRows[0],
+      total_count: total,
       musics: musicRows.map((row) => {
         return {
           music_url: row.music_url,
