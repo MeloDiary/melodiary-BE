@@ -854,11 +854,6 @@ export const getMypost = async (req: Request, res: Response) => {
       [userId, userId]
     );
 
-    const countQuery = `SELECT FOUND_ROWS() as total`;
-    const [[{ total }]] = await dbConnection.execute<RowDataPacket[]>(
-      countQuery
-    );
-
     const diaryInfos = await Promise.all(
       diaryRows.map((row) => {
         return convertDiaryInfo(row);
