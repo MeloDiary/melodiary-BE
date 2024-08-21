@@ -44,11 +44,14 @@ export const postDiary = async (req: Request, res: Response) => {
 
     const { error } = diarySchema.validate(req.body);
     if (error) {
-      throw new Error(error.details[0].message);
-      //res.status(400).json({ message: error.details[0].message });
+      return res.status(400).json({ message: error.details[0].message });
     }
 
     const { userId } = req.user as JwtPayload;
+    const has_posts = await checkTodayPost(userId);
+    if (has_posts) {
+      return res.status(409).json({ message: 'Already posted diary today' });
+    }
 
     await dbConnection.beginTransaction();
 
@@ -854,13 +857,21 @@ export const getMypost = async (req: Request, res: Response) => {
       [userId, userId]
     );
 
+    const countQuery = `SELECT FOUND_ROWS() as total`;
+    const [[{ total }]] = await dbConnection.execute<RowDataPacket[]>(
+      countQuery
+    );
+
     const diaryInfos = await Promise.all(
       diaryRows.map((row) => {
         return convertDiaryInfo(row);
       })
     );
 
-    res.status(200).json(diaryInfos);
+    res.status(200).json({
+      total_count: total,
+      diaries: diaryInfos
+    });
   } catch (error) {
     console.error(error);
     res
@@ -920,6 +931,38 @@ export const getMymoods = async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
+  } finally {
+    dbConnection.release();
+  }
+};
+
+export const getToday = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.user as JwtPayload;
+
+    const hasPost = await checkTodayPost(userId);
+    res.status(200).json({ has_posts: hasPost });
+  } catch (error) {
+    console.error('업데이트 오류:', error);
+    res.status(500).json({
+      message: 'There is something wrong with the server'
+    });
+  }
+};
+
+const checkTodayPost = async (userId: number) => {
+  const dbConnection = await dbPool.getConnection();
+  try {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식으로 오늘 날짜 생성
+    const diaryQuery = `SELECT * FROM diary WHERE user_id=? AND DATE(created_at)= ?`;
+    const [diaryRows] = await dbConnection.execute<RowDataPacket[]>(
+      diaryQuery,
+      [userId, today]
+    );
+
+    return diaryRows.length > 0;
+  } catch (error) {
+    throw new Error('Database query error: ' + error.message);
   } finally {
     dbConnection.release();
   }

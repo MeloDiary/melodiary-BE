@@ -11,7 +11,8 @@ import {
   getMatefeeds,
   getExplore,
   getMymoods,
-  getMypost
+  getMypost,
+  getToday
 } from '../controllers/diariesController.js';
 import { verifyTokenMiddleware } from '../middlewares/authMiddleware.js';
 import commentRouter from './comments.js';
@@ -27,6 +28,7 @@ router.get('/mates', verifyTokenMiddleware, getMatefeeds);
 router.get('/explore', verifyTokenMiddleware, getExplore);
 router.get('/myposts', verifyTokenMiddleware, getMypost);
 router.get('/mymoods', verifyTokenMiddleware, getMymoods);
+router.get('/today', verifyTokenMiddleware, getToday);
 
 router.post('/', verifyTokenMiddleware, postDiary);
 router.put('/:diaryId', verifyTokenMiddleware, putDiary);
