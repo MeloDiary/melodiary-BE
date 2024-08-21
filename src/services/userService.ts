@@ -80,7 +80,7 @@ export const googleSignUpService = async (
 
     return { userId, accessToken, refreshToken };
   } catch (error) {
-    console.error('Error in googleSignUp service', error.message);
+    console.error('Error in googleSignUp service', error);
     throw error;
   }
 };
@@ -144,7 +144,7 @@ export const googleLoginService = async (
 
     return { userId, accessToken, refreshToken };
   } catch (error) {
-    console.error('Error in googleLogin service', error.message);
+    console.error('Error in googleLogin service', error);
     throw error;
   }
 };
@@ -232,7 +232,7 @@ export const naverSignUpService = async (
 
     return { userId, accessToken, refreshToken };
   } catch (error) {
-    console.error('Error in naverSignUp service', error.message);
+    console.error('Error in naverSignUp service', error);
     throw error;
   }
 };
@@ -313,7 +313,7 @@ export const naverLoginService = async (
 
     return { userId, accessToken, refreshToken };
   } catch (error) {
-    console.error('Error in naverLogin service', error.message);
+    console.error('Error in naverLogin service', error);
     throw error;
   }
 };
@@ -327,7 +327,7 @@ export const checkNicknameService = async (
 
     return result;
   } catch (error) {
-    console.error('Error in checkNicknameService', error.message);
+    console.error('Error in checkNicknameService', error);
     throw error;
   }
 };
@@ -341,7 +341,7 @@ export const checkUserService = async (
 
     return result;
   } catch (error) {
-    console.error('Error in checkUserService', error.message);
+    console.error('Error in checkUserService', error);
     throw error;
   }
 };
@@ -360,7 +360,7 @@ export const registerNicknameService = async (
 
     return result;
   } catch (error) {
-    console.error('Error in registerNicknameService', error.message);
+    console.error('Error in registerNicknameService', error);
     throw error;
   }
 };
@@ -401,7 +401,7 @@ export const searchUserService = async (
 
     return result;
   } catch (error) {
-    console.error('Error in searchUserService', error.message);
+    console.error('Error in searchUserService', error);
     throw error;
   }
 };
@@ -434,7 +434,7 @@ export const userInfoService = async (userID: number): Promise<object> => {
 
     return userInfo;
   } catch (error) {
-    console.error('Error in userInfoService', error.message);
+    console.error('Error in userInfoService', error);
     throw error;
   }
 };
@@ -472,7 +472,7 @@ export const registerProfileImgService = async (
 
     return result;
   } catch (error) {
-    console.error('Error in registerProfileImgService', error.message);
+    console.error('Error in registerProfileImgService', error);
     throw error;
   }
 };
@@ -491,7 +491,7 @@ export const registerBackgroundImgService = async (
 
     return result;
   } catch (error) {
-    console.error('Error in registerBackgroundImgService', error.message);
+    console.error('Error in registerBackgroundImgService', error);
     throw error;
   }
 };
@@ -502,7 +502,7 @@ export const logoutService = async (userID: number): Promise<void> => {
     // Redis에 저장된 JWT 삭제
     await deleteJWTInRedis(userID);
   } catch (error) {
-    console.error('Error in logoutService', error.message);
+    console.error('Error in logoutService', error);
     throw error;
   }
 };
@@ -552,7 +552,7 @@ export const tokenRefreshService = async (
       refresh_token: newRefreshToken
     };
   } catch (error) {
-    console.error('Error in access token reissue', error.message);
+    console.error('Error in access token reissue', error);
     throw error;
   }
 };

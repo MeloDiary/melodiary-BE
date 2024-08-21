@@ -23,7 +23,7 @@ export const mateListService = async (userID: number): Promise<object[]> => {
 
     return mateList;
   } catch (error) {
-    console.error('Error in mateListService', error.message);
+    console.error('Error in mateListService', error);
     throw error;
   }
 };
@@ -42,7 +42,7 @@ export const sendMateRequestService = async (
 
     return await Mate.createMate(userID, mateID);
   } catch (error) {
-    console.error('Error in sendMateRequestService', error.message);
+    console.error('Error in sendMateRequestService', error);
     throw error;
   }
 };
@@ -59,7 +59,7 @@ export const deleteMateService = async (
       throw new Error('Not found such user');
     }
   } catch (error) {
-    console.error('Error in deleteMateService', error.message);
+    console.error('Error in deleteMateService', error);
     throw error;
   }
 };
@@ -88,7 +88,7 @@ export const receivedMateRequestService = async (
 
     return receivedMateRequests;
   } catch (error) {
-    console.error('Error in receivedMateRequestService', error.message);
+    console.error('Error in receivedMateRequestService', error);
     throw error;
   }
 };
@@ -117,7 +117,7 @@ export const sentMateRequestService = async (
 
     return sentMateRequests;
   } catch (error) {
-    console.error('Error in sentMateRequestService', error.message);
+    console.error('Error in sentMateRequestService', error);
     throw error;
   }
 };
@@ -134,7 +134,7 @@ export const acceptMateRequestService = async (
       throw new Error('Not found such request');
     }
   } catch (error) {
-    console.error('Error in acceptMateRequestService', error.message);
+    console.error('Error in acceptMateRequestService', error);
     throw error;
   }
 };
@@ -151,7 +151,7 @@ export const rejectMateRequestService = async (
       throw new Error('Not found such request');
     }
   } catch (error) {
-    console.error('Error in rejectMateRequestService', error.message);
+    console.error('Error in rejectMateRequestService', error);
     throw error;
   }
 };

@@ -24,6 +24,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // 요청 body parser
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // CORS 설정
 app.use(

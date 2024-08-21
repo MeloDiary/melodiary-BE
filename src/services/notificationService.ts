@@ -33,7 +33,7 @@ export const unreadNotificationListService = async (
 
     return unreadNotificationList;
   } catch (error) {
-    console.error('Error in unreadNotificationListService', error.message);
+    console.error('Error in unreadNotificationListService', error);
     throw error;
   }
 };
@@ -70,7 +70,7 @@ export const readNotificationListService = async (
 
     return readNotificationList;
   } catch (error) {
-    console.error('Error in readNotificationListService', error.message);
+    console.error('Error in readNotificationListService', error);
     throw error;
   }
 };
@@ -90,7 +90,7 @@ export const updateNotificationStatusService = async (
       throw new Error('Not found such notification');
     }
   } catch (error) {
-    console.error('Error in updateNotificationStatusService', error.message);
+    console.error('Error in updateNotificationStatusService', error);
     throw error;
   }
 };

@@ -40,6 +40,7 @@ export const generateRefreshToken = async (
 
     return jwt.sign(payload, jwtRefreshSecret, signOptions);
   } catch (error) {
+    console.error('Error occured during generating refresh token: ', error);
     throw new Error('Error occured during generating refresh token');
   }
 };
@@ -63,9 +64,9 @@ export const storeJWTInRedis = async (
     });
     await redisClient.expire(userIdString, 7 * 24 * 60 * 60);
     console.log('Tokens saved to Redis');
-  } catch (err) {
-    console.error('Failed to store tokens in Redis', err.message);
-    throw new Error('Error occured during stroing JWT');
+  } catch (error) {
+    console.error('Failed to store tokens in Redis', error);
+    throw new Error('Error occured during storing JWT');
   }
 };
 
@@ -78,8 +79,8 @@ export const deleteJWTInRedis = async (userId: number): Promise<void> => {
     const userIdString = userId.toString();
     await redisClient.del(userIdString);
     console.log('Tokens deleted from Redis');
-  } catch (err) {
-    console.error('Failed to delete tokens in Redis', err.message);
+  } catch (error) {
+    console.error('Failed to delete tokens in Redis', error);
     throw new Error('Error occured during deleting JWT');
   }
 };
@@ -96,6 +97,7 @@ export const verifyAccessToken = async (token: string): Promise<object> => {
 
     return jwt.verify(token, jwtSecret) as JwtPayload;
   } catch (error) {
+    console.error('Error occured during verify access token', error);
     throw new Error('Invalid or expired access token');
   }
 };
@@ -111,6 +113,7 @@ export const verifyRefreshToken = async (token: string): Promise<object> => {
     const jwtRefreshSecret: Secret = process.env.JWT_REFRESH_SECRET as string;
     return jwt.verify(token, jwtRefreshSecret) as JwtPayload;
   } catch (error) {
+    console.error('Error occured during verify refresh token', error);
     throw new Error('Invalid or expired refresh token');
   }
 };
