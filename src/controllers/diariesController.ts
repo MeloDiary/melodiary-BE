@@ -171,7 +171,7 @@ export const putDiary = async (req: Request, res: Response) => {
       [diaryId]
     );
 
-    if (checkRows.length === 0) {
+    if (checkRows.length == 0) {
       return res.status(404).json({ message: 'Not Found that diary' });
     }
     if (checkRows[0].user_id != userId) {
@@ -284,9 +284,9 @@ export const deleteDiary = async (req: Request, res: Response) => {
     const checkQuery = `SELECT * FROM diary WHERE id = ?`;
     const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
       checkQuery,
-      [diaryId, userId]
+      [diaryId]
     );
-    if (checkRows.length === 0) {
+    if (checkRows.length == 0) {
       return res.status(404).json({ message: 'Not Found that diary' });
     }
     if (checkRows[0].user_id != userId) {
@@ -371,7 +371,7 @@ export const getDiary = async (req: Request, res: Response) => {
       diaryId
     ]);
 
-    if (rows.length === 0) {
+    if (rows.length == 0) {
       return res.status(404).json({ message: 'Not Found that diary' });
     }
     const row = rows[0];
@@ -418,7 +418,7 @@ export const getLike = async (req: Request, res: Response) => {
       [diaryId]
     );
 
-    if (checkRows.length === 0) {
+    if (checkRows.length == 0) {
       return res.status(404).json({ message: 'Not Found that diary' });
     }
 
@@ -481,7 +481,7 @@ export const postLike = async (req: Request, res: Response) => {
       checkQuery,
       [diaryId]
     );
-    if (checkRows.length === 0) {
+    if (checkRows.length == 0) {
       return res.status(404).json({ message: 'Not Found that diary' });
     }
 
