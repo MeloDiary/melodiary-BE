@@ -578,6 +578,8 @@ export const getCalendar = async (req: Request, res: Response) => {
         .required()
     });
 
+    await dbConnection.beginTransaction();
+
     const { error } = diarySchema.validate(req.query);
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
@@ -591,7 +593,6 @@ export const getCalendar = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Not found that user' });
     }
 
-    await dbPool.beginTransaction();
     const startDate = `${month}-01`;
     const endDate = `${month}-31 23:59:59`; // 28일 또는 29일이 아닌 31일로 설정해서 안전하게 다 포함
 
