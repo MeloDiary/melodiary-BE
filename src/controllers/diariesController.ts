@@ -578,6 +578,8 @@ export const getCalendar = async (req: Request, res: Response) => {
         .required()
     });
 
+    await dbConnection.beginTransaction();
+
     const { error } = diarySchema.validate(req.query);
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
@@ -591,7 +593,6 @@ export const getCalendar = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Not found that user' });
     }
 
-    await dbPool.beginTransaction();
     const startDate = `${month}-01`;
     const endDate = `${month}-31 23:59:59`; // 28일 또는 29일이 아닌 31일로 설정해서 안전하게 다 포함
 
@@ -798,6 +799,18 @@ export const getMypost = async (req: Request, res: Response) => {
 
   try {
     const { userId } = req.user as JwtPayload;
+    const schema = Joi.object({
+      page: Joi.number().integer().min(1).default(1),
+      limit: Joi.number().integer().min(1).default(5)
+    });
+    let {
+      error,
+      value: { page, limit }
+    } = schema.validate(req.query);
+    if (error) {
+      page = page || 1;
+      limit = limit || 5;
+    }
 
     let userQuery = `SELECT id, nickname, profile_img_url FROM user WHERE id=?`;
     const [userRows] = await dbConnection.execute<RowDataPacket[]>(userQuery, [
@@ -808,7 +821,7 @@ export const getMypost = async (req: Request, res: Response) => {
     }
 
     const diaryQuery = `
-        SELECT 
+        SELECT SQL_CALC_FOUND_ROWS
           d.*, 
           m.music_url, m.title as music_title, m.artist as music_artist, 
           w.location, w.icon as weather_icon, w.avg_temperature,
@@ -833,11 +846,17 @@ export const getMypost = async (req: Request, res: Response) => {
         GROUP BY 
           d.id
         ORDER BY 
-          d.created_at DESC;
+          d.created_at DESC
+        LIMIT ${limit} OFFSET ${limit * (page - 1)};
       `;
     const [diaryRows] = await dbConnection.execute<RowDataPacket[]>(
       diaryQuery,
       [userId, userId]
+    );
+
+    const countQuery = `SELECT FOUND_ROWS() as total`;
+    const [[{ total }]] = await dbConnection.execute<RowDataPacket[]>(
+      countQuery
     );
 
     const diaryInfos = await Promise.all(
