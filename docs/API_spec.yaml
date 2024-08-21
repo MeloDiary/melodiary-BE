@@ -2583,9 +2583,16 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DiaryInfo'
+                type: object
+                properties:
+                  total_count:
+                    type: integer
+                    example: 55  
+                    description: 플레이리스트 총 갯수
+                  diaries:                
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DiaryInfo'
         '401':
           description: Access token이 유효하지 않거나 만료됨
           content:
@@ -3066,7 +3073,6 @@ paths:
                         - $ref: '#/components/schemas/MusicInfo'
                         - type: object
                           properties:
-
                             created_at:
                               type: string
                               format: date
