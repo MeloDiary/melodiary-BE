@@ -23,13 +23,13 @@ export interface IPostDiary {
   weather?: IPostWeather | null;
 }
 
-interface IPostMusic {
+export interface IPostMusic {
   music_url: string;
   title: string;
   artist: string;
 }
 
-interface IPostWeather {
+export interface IPostWeather {
   location: string;
   icon: string;
   avg_temperature: number;

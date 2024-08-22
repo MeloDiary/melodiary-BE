@@ -3,11 +3,10 @@ import { Request, Response } from 'express';
 import dbPool from '../config/dbConfig.js';
 import { IPostDiary } from '../types/diary';
 import { JwtPayload } from 'jsonwebtoken';
-import { generateGetPresignedUrl } from '../utils/s3Utils.js';
 import Joi from 'joi';
+import {checkAccessAuth,checkTodayPost,convertDiaryInfo}from '../services/diaryService.js'
 
-export const postDiary = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
+export const postDiaryController = async (req: Request, res: Response) => {
 
   try {
     const {
@@ -53,62 +52,7 @@ export const postDiary = async (req: Request, res: Response) => {
       return res.status(409).json({ message: 'Already posted diary today' });
     }
 
-    await dbConnection.beginTransaction();
 
-    // diary 테이블에 데이터 삽입
-    const diaryQuery = `INSERT INTO diary (title, content, user_id, mood, emoji, privacy, background_color) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?)`;
-
-    const [result] = await dbConnection.execute<ResultSetHeader>(diaryQuery, [
-      title,
-      content,
-      userId,
-      mood,
-      emoji,
-      privacy,
-      background_color
-    ]);
-    // 생성된 diary ID 가져오기
-    const diaryId = result.insertId;
-
-    // music table
-    if (music) {
-      const musicQuery = `
-      INSERT INTO music (diary_id, music_url, title, artist) 
-      VALUES (?, ?, ?, ?)
-    `;
-
-      await dbConnection.execute(musicQuery, [
-        diaryId,
-        music.music_url,
-        music.title,
-        music.artist
-      ]);
-    }
-
-    // weather table
-    if (weather) {
-      const weatherQuery = `
-      INSERT INTO weather (diary_id, location, icon, avg_temperature) 
-      VALUES (?, ?, ?, ?)
-    `;
-
-      await dbConnection.execute(weatherQuery, [
-        diaryId,
-        weather.location,
-        weather.icon,
-        weather.avg_temperature
-      ]);
-    }
-
-    if (img_urls && img_urls.length > 0) {
-      const imgQuery = `INSERT INTO image (diary_id, image_url,image_order) VALUES (?, ?, ?)`;
-      for (let i = 0; i < img_urls.length; i++) {
-        await dbConnection.execute(imgQuery, [diaryId, img_urls[i], i]);
-      }
-    }
-
-    await dbConnection.commit();
     res.status(201).json({ diary_id: diaryId });
   } catch (error) {
     await dbConnection.rollback();
@@ -942,104 +886,3 @@ export const getToday = async (req: Request, res: Response) => {
   }
 };
 
-const checkTodayPost = async (userId: number) => {
-  const dbConnection = await dbPool.getConnection();
-  try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식으로 오늘 날짜 생성
-    const diaryQuery = `SELECT * FROM diary WHERE user_id=? AND DATE(created_at)= ?`;
-    const [diaryRows] = await dbConnection.execute<RowDataPacket[]>(
-      diaryQuery,
-      [userId, today]
-    );
-
-    return diaryRows.length > 0;
-  } catch (error) {
-    throw new Error('Database query error: ' + error.message);
-  } finally {
-    dbConnection.release();
-  }
-};
-
-const checkAccessAuth = async (
-  userId: string | number,
-  writerId: string | number,
-  privacy: string
-) => {
-  if (writerId == userId || privacy == 'public') {
-    return true;
-  } else if (privacy == 'private') {
-    return false;
-  }
-  // (row.privacy == 'mate')
-
-  const dbConnection = await dbPool.getConnection();
-  try {
-    const mateQuery = `SELECT * FROM mate WHERE status='accepted' AND ((requested_user_id = ? AND received_user_id = ?) OR (requested_user_id = ? AND received_user_id = ?) )`;
-    const [mateRows] = await dbConnection.execute<RowDataPacket[]>(mateQuery, [
-      userId,
-      writerId,
-      writerId,
-      userId
-    ]);
-    if (mateRows.length == 0) {
-      return false;
-    } else {
-      return true;
-    }
-  } catch {
-    throw new Error('mate 테이블 참조 불가 오류 발생');
-  } finally {
-    dbConnection.release();
-  }
-};
-
-const convertDiaryInfo = async (row: any) => {
-  const profileImgURL = row.profile_img_url
-    ? await generateGetPresignedUrl(row.profile_img_url)
-    : null;
-
-  const diaryImgUrls = row.img_urls
-    ? await Promise.all(
-        row.img_urls.split(',').map((url: string) => {
-          return generateGetPresignedUrl(url);
-        })
-      )
-    : [];
-
-  const result = {
-    id: row.id,
-    user_profile: {
-      user_id: row.user_id,
-      profile_img_url: profileImgURL,
-      nickname: row.nickname
-    },
-    like_count: row.like_count,
-    created_at: row.created_at,
-    body: {
-      title: row.title,
-      content: row.content,
-      img_urls: diaryImgUrls,
-      mood: row.mood,
-      emoji: row.emoji,
-      privacy: row.privacy,
-      music: row.music_url
-        ? {
-            music_url: row.music_url,
-            title: row.music_title,
-            artist: row.music_artist
-          }
-        : null,
-      weather: row.location
-        ? {
-            location: row.location,
-            icon: row.weather_icon,
-            avg_temperature: row.avg_temperature
-          }
-        : null,
-      background_color: row.background_color
-    },
-    liked: Boolean(row.liked)
-  };
-
-  return result;
-};
