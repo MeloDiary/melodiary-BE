@@ -318,6 +318,157 @@ export const naverLoginService = async (
   }
 };
 
+// Facebook 회원가입 service
+export const facebookSignUpService = async (
+  authRequest: IAuthRequest
+): Promise<{ userId: number; accessToken: string; refreshToken: string }> => {
+  try {
+    const { authorizationCode } = authRequest;
+
+    // 환경 변수에서 필요한 값을 가져옵니다.
+    const clientId = process.env.FACEBOOK_CLIENT_ID;
+    const clientSecret = process.env.FACEBOOK_CLIENT_SECRET;
+    const redirectUri = process.env.FACEBOOK_REDIRECT_URI;
+
+    // 필수 환경 변수가 없는 경우 오류 처리
+    if (!clientId || !clientSecret || !redirectUri) {
+      throw new Error(
+        'Missing necessary environment variables for Facebook OAuth'
+      );
+    }
+
+    // Facebook으로 부터 access token을 받아옴
+    const tokenResponse = await axios.get(
+      'https://graph.facebook.com/v12.0/oauth/access_token',
+      {
+        params: {
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          client_secret: clientSecret,
+          code: authorizationCode
+        }
+      }
+    );
+
+    const facebookAccessToken = tokenResponse.data.access_token;
+
+    const userResponse = await axios.get('https://graph.facebook.com/me', {
+      params: {
+        fields: 'email',
+        access_token: facebookAccessToken
+      }
+    });
+
+    const userEmail = userResponse.data.email;
+
+    // 이미 존재하는 사용자인지 확인
+    const isUserExists = await User.isUserExistsByEmail(userEmail);
+
+    if (isUserExists !== null) {
+      throw new Error('The user already exists');
+    }
+
+    // 닉네임 중복 방지를 위해 초기 닉네임을 랜덤 동물 닉네임으로 설정
+    const randomNickname = await generateUniqueRandomNickname();
+
+    const userId = await User.createUser(userEmail, randomNickname);
+
+    if (userId === null) {
+      throw new Error('Database insert failed');
+    }
+
+    // 사용자의 ID와 email 주소를 payload에 넣어서 JWT 발급
+    const accessToken = await generateAccessToken({
+      userId: userId,
+      email: userEmail
+    });
+    const refreshToken = await generateRefreshToken({
+      userId: userId,
+      email: userEmail
+    });
+
+    // 사용자의 ID와 새로 발급된 JWT를 Redis에 저장
+    await storeJWTInRedis(userId, accessToken, refreshToken);
+
+    return { userId, accessToken, refreshToken };
+  } catch (error) {
+    console.error('Error in facebookSignUp service', error);
+    throw error;
+  }
+};
+
+// Facebook 로그인 service
+export const facebookLoginService = async (
+  authRequest: IAuthRequest
+): Promise<{ userId: number; accessToken: string; refreshToken: string }> => {
+  try {
+    const { authorizationCode } = authRequest;
+
+    // 환경 변수에서 필요한 값을 가져옵니다.
+    const clientId = process.env.FACEBOOK_CLIENT_ID;
+    const clientSecret = process.env.FACEBOOK_CLIENT_SECRET;
+    const redirectUri = process.env.FACEBOOK_REDIRECT_URI;
+
+    // 필수 환경 변수가 없는 경우 오류 처리
+    if (!clientId || !clientSecret || !redirectUri) {
+      throw new Error(
+        'Missing necessary environment variables for Facebook OAuth'
+      );
+    }
+
+    // Facebook로 부터 access token을 받아옴
+    const tokenResponse = await axios.get(
+      'https://graph.facebook.com/v12.0/oauth/access_token',
+      {
+        params: {
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          client_secret: clientSecret,
+          code: authorizationCode
+        }
+      }
+    );
+
+    const facebookAccessToken = tokenResponse.data.access_token;
+
+    const userResponse = await axios.get('https://graph.facebook.com/me', {
+      params: {
+        fields: 'email',
+        access_token: facebookAccessToken
+      }
+    });
+
+    const userEmail = userResponse.data.email;
+
+    // 회원가입되지 않은 사용자인지 확인
+    const userId = await User.isUserExistsByEmail(userEmail);
+
+    if (userId === null) {
+      throw new Error('Cannot find user account');
+    }
+
+    // 사용자의 ID와 email 주소를 payload에 넣어서 JWT 발급
+    const accessToken = await generateAccessToken({
+      userId: userId,
+      email: userEmail
+    });
+    const refreshToken = await generateRefreshToken({
+      userId: userId,
+      email: userEmail
+    });
+
+    // 사용자의 기존 JWT 삭제
+    await deleteJWTInRedis(userId);
+    // 사용자의 ID와 새로 발급된 JWT를 Redis에 저장
+    await storeJWTInRedis(userId, accessToken, refreshToken);
+
+    return { userId, accessToken, refreshToken };
+  } catch (error) {
+    console.error('Error in naverLogin service', error);
+    throw error;
+  }
+};
+
 // 닉네임 중복확인 service
 export const checkNicknameService = async (
   nickname: string

@@ -15,7 +15,9 @@ import {
   registerProfileImgService,
   registerBackgroundImgService,
   logoutService,
-  tokenRefreshService
+  tokenRefreshService,
+  facebookSignUpService,
+  facebookLoginService
 } from '../services/userService.js';
 
 //회원가입 controller
@@ -26,7 +28,7 @@ export const signUpController = async (req: Request, res: Response) => {
       authorization_code: authorizationCode,
       state
     } = req.body;
-    const validProviders: string[] = ['google', 'naver', 'kakao'];
+    const validProviders: string[] = ['google', 'naver', 'facebook'];
 
     // 요청 구문이 잘못된 경우 400 코드 리턴함
     if (!validProviders.includes(serviceProvider))
@@ -63,8 +65,19 @@ export const signUpController = async (req: Request, res: Response) => {
       });
     }
 
-    // Kakao 회원가입 service 호출
-    if (serviceProvider === 'kakao') {
+    // Facebook 회원가입 service 호출
+    if (serviceProvider === 'facebook') {
+      const result = await facebookSignUpService({
+        serviceProvider,
+        authorizationCode,
+        state
+      });
+
+      return res.status(201).json({
+        user_id: result.userId,
+        access_token: result.accessToken,
+        refresh_token: result.refreshToken
+      });
     }
   } catch (error) {
     // 이미 존재하는 사용자인 경우 409 코드 리턴함
@@ -86,7 +99,7 @@ export const loginController = async (req: Request, res: Response) => {
       authorization_code: authorizationCode,
       state
     } = req.body;
-    const validProviders: string[] = ['google', 'naver', 'kakao'];
+    const validProviders: string[] = ['google', 'naver', 'facebook'];
 
     // 요청 구문이 잘못된 경우 400 코드 리턴함
     if (!validProviders.includes(serviceProvider))
@@ -124,8 +137,20 @@ export const loginController = async (req: Request, res: Response) => {
       });
     }
 
-    // Kakao 로그인 service 호출
-    if (serviceProvider === 'kakao') {
+    // Facebook 로그인 service 호출
+    if (serviceProvider === 'facebook') {
+      const result = await facebookLoginService({
+        serviceProvider,
+        authorizationCode,
+        state
+      });
+
+      // 로그인 성공한 경우 200 코드와 id, access token, refresh token 리턴함
+      return res.status(200).json({
+        user_id: result.userId,
+        access_token: result.accessToken,
+        refresh_token: result.refreshToken
+      });
     }
   } catch (error) {
     // 가입되지 않은 사용자인 경우 404 코드 리턴함
