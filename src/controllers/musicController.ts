@@ -32,9 +32,9 @@ export const getMusicHistory = async (req: Request, res: Response) => {
     const musicQuery = `
     SELECT SQL_CALC_FOUND_ROWS
       m.*, d.created_at
-      FROM music m
+    FROM music m
     LEFT JOIN
-      diary d ON d.id=m.diary_id
+      diary d ON d.id=m.diary_id    
     WHERE
       d.user_id= ?
     ORDER BY
@@ -60,7 +60,8 @@ export const getMusicHistory = async (req: Request, res: Response) => {
           music_url: row.music_url,
           title: row.title,
           artist: row.artist,
-          created_at: row.created_at
+          created_at: row.created_at,
+          diary_id: row.diary_id
         };
       })
     });
