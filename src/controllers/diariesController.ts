@@ -9,17 +9,17 @@ import {checkAccessAuth,checkTodayPost,convertDiaryInfo}from '../services/diaryS
 export const postDiaryController = async (req: Request, res: Response) => {
 
   try {
-    const {
-      title,
-      content,
-      img_urls,
-      mood,
-      emoji,
-      privacy,
-      background_color,
-      music,
-      weather
-    }: IPostDiary = req.body;
+    // const {
+    //   title,
+    //   content,
+    //   img_urls,
+    //   mood,
+    //   emoji,
+    //   privacy,
+    //   background_color,
+    //   music,
+    //   weather
+    // }: IPostDiary = req.body;
 
     const diarySchema = Joi.object({
       title: Joi.string().required(),

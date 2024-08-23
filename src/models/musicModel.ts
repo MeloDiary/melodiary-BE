@@ -2,7 +2,7 @@
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import dbPool from '../config/dbConfig.js';
 import { Connection } from 'mysql2/promise';
-
+import { IPostMusic } from '../types/diary.js';
 
 class MusicModel {
   static post = async (diaryId:number,{music_url,title,artist}:IPostMusic,dbConnection:Connection): Promise<ResultSetHeader | null> => {
