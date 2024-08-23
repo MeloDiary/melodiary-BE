@@ -3396,6 +3396,9 @@ components:
     CommentInfo:
       type: object
       properties:
+        comment_id:
+          type: integer
+          description: 댓글 ID
         writer_user_profile:
           $ref: '#/components/schemas/ProfileInfo'
           description: 댓글 작성자 프로필
