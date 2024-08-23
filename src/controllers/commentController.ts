@@ -53,9 +53,9 @@ export const postComment = async (req: Request, res: Response) => {
         .json({ message: 'No permission to access the comment' });
     }
 
-    const writerUser = validateUser(userId);
+    const writerUser = await validateUser(userId);
     const mentionedUser = mentioned_user_id
-      ? validateUser(mentioned_user_id)
+      ? await validateUser(mentioned_user_id)
       : null;
     if (writerUser == undefined) {
       return res
@@ -74,7 +74,7 @@ export const postComment = async (req: Request, res: Response) => {
     const [result] = await dbConnection.execute<ResultSetHeader>(commentQuery, [
       content,
       userId,
-      mentioned_user_id,
+      mentioned_user_id ? mentioned_user_id : null,
       diaryId
     ]);
     const commentId = result.insertId;
@@ -152,7 +152,7 @@ export const getComments = async (req: Request, res: Response) => {
           mentioned_user_profile: mentionedUser,
           created_at: row.created_at,
           diary_id: row.diary_id,
-          content: row.content,
+          content: row.content
         };
       })
     );
@@ -205,9 +205,9 @@ export const putComment = async (req: Request, res: Response) => {
         .json({ message: 'No permission to access the comment' });
     }
 
-    const writerUser = validateUser(userId);
+    const writerUser = await validateUser(userId);
     const mentionedUser = mentioned_user_id
-      ? validateUser(mentioned_user_id)
+      ? await validateUser(mentioned_user_id)
       : null;
     if (writerUser == undefined) {
       return res
@@ -225,7 +225,7 @@ export const putComment = async (req: Request, res: Response) => {
 
     await dbConnection.execute<RowDataPacket[]>(commentQuery, [
       content,
-      mentioned_user_id,
+      mentioned_user_id ? mentioned_user_id : null,
       commentId
     ]);
 
@@ -265,7 +265,7 @@ export const deleteComment = async (req: Request, res: Response) => {
 
     await dbConnection.beginTransaction();
 
-    const checkQuery = `SELECT * FROM comment WHERE id=? AND mentioned_user_id=?`;
+    const checkQuery = `SELECT * FROM comment WHERE id=? AND writer_user_id=?`;
     const [checkResult] = await dbConnection.execute<RowDataPacket[]>(
       checkQuery,
       [commentId, userId]
@@ -332,9 +332,10 @@ const validateUser = async (
   const dbConnection = await dbPool.getConnection();
   try {
     const query = `SELECT id as user_id,nickname,profile_img_url FROM user WHERE id=?`;
-    const [rows] = await dbPool.execute<IUserProfileRowDataPacket[]>(query, [
-      userId
-    ]);
+    const [rows] = await dbConnection.execute<IUserProfileRowDataPacket[]>(
+      query,
+      [userId]
+    );
     if (rows.length > 0) {
       return {
         user_id: Number(userId),
