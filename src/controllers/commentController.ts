@@ -147,11 +147,12 @@ export const getComments = async (req: Request, res: Response) => {
         }
 
         return {
+          comment_id: row.id,
           writer_user_profile: writerUser,
-          diary_id: row.diary_id,
           mentioned_user_profile: mentionedUser,
+          created_at: row.created_at,
+          diary_id: row.diary_id,
           content: row.content,
-          created_at: row.created_at
         };
       })
     );
