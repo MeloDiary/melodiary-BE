@@ -5,8 +5,13 @@ import { s3ImageUploadUrlService } from '../services/awsService.js';
 // S3 버킷 이미지 업로드 controller
 export const s3ImageUploadController = async (req: Request, res: Response) => {
   try {
-    const filenames = req.body['filenames'];
+    let filenames = req.body['filenames'];
     const files = req.files as Express.Multer.File[];
+
+    // 이미지 하나만 업로드하는 경우 파일명을 배열로 변환
+    if (typeof filenames === 'string') {
+      filenames = [filenames];
+    }
 
     // 요청 구문이 잘못된 경우 400 코드 리턴함
     if (!Array.isArray(filenames) || filenames.length !== files.length) {
