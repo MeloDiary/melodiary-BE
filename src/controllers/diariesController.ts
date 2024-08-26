@@ -68,8 +68,7 @@ export const postDiaryController = async (req: Request, res: Response) => {
   }
 };
 
-export const putDiary = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
+export const putDiaryController = async (req: Request, res: Response) => {
 
   try {
     const diarySchema = Joi.object({
@@ -110,7 +109,6 @@ export const putDiary = async (req: Request, res: Response) => {
     }: IPostDiary = req.body;
     const { userId } = req.user as JwtPayload;
 
-    await dbConnection.beginTransaction();
     // 수정하려는 일기의 유저 ID와 현재 유저 ID를 비교한 후, 다르면 403(권한없음) 에러를 리턴합니다.
     const checkQuery = `SELECT * FROM diary WHERE id = ?`;
     const [checkRows] = await dbConnection.execute<RowDataPacket[]>(
@@ -622,8 +620,10 @@ export const getMatefeeds = async (req: Request, res: Response) => {
     ]);
 
     let diaryRows: any[] = [];
+    
     if (mateRows.length > 0) {
-      const mateIds = mateRows.map((row) => row.mate_id).join(',');
+      const mateIds = mateRows.map((row) => row.mate_id)
+      const placeholders = mateIds.map(() => '?').join(',');
 
       const diaryQuery = `
         SELECT 
@@ -647,7 +647,7 @@ export const getMatefeeds = async (req: Request, res: Response) => {
         LEFT JOIN
           user u on d.user_id = u.id          
         WHERE 
-          d.user_id IN (?) AND d.privacy IN ('mate','public')
+          d.user_id IN (${placeholders}) AND d.privacy IN ('mate','public')
         GROUP BY 
           d.id          
         ORDER BY 
@@ -656,7 +656,7 @@ export const getMatefeeds = async (req: Request, res: Response) => {
         `;
       [diaryRows] = await dbConnection.execute<RowDataPacket[]>(diaryQuery, [
         userId,
-        mateIds
+        ...mateIds
       ]);
     }
     const diaryInfos = await Promise.all(

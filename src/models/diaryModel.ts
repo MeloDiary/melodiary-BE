@@ -82,7 +82,7 @@ class DiaryModel {
     userId: number,
     writerId: number,
     dbConnection: Connection
-  ) => {
+  ): Promise<boolean> => {
     try {
       const query = `
             SELECT *
@@ -97,11 +97,44 @@ class DiaryModel {
         writerId,
         userId
       ]);
-      return result;
+      if (result.length == 0) {
+        return false;
+      } else {
+        return true;
+      }
     } catch (error) {
       throw new Error('');
     }
   };
+
+  static verifyWriter = async (
+    userId: number,
+    diaryId: number,
+    dbConnection: Connection
+  ) => {
+    try {
+      const query = `SELECT * FROM diary WHERE id =? AND user_id =?`;
+      const [result] = await dbConnection.execute<RowDataPacket[]>(query, [
+        diaryId,
+        userId
+      ]);
+      if (result.length == 0) {
+        return false;
+      } else {
+        return true;
+      }
+    } catch (error) {
+      throw new Error('');
+    }
+  };
+
+  static getDiaryById = async (diaryId:number,dbConnection:Connection):promise<RowDataPacket> =>{
+    const query = `SELECT * FROM diary WHERE id =?`;
+    const [result] = await dbConnection.execute<RowDataPacket[]>(query, [
+        diaryId,
+    ]);
+    return result
+  }
 }
 
 export default DiaryModel;

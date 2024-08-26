@@ -6,6 +6,7 @@ import ImageModel from '../models/imageModel.js';
 import { generateGetPresignedUrl } from '../utils/s3Utils.js';
 import { IPostDiary } from '../types/diary.js';
 import DiaryModel from '../models/diaryModel.js';
+import CustomError from '../utils/customError.js';
 
 export const checkTodayPost = async (userId: number) => {
   const dbConnection = await dbPool.getConnection();
@@ -25,7 +26,7 @@ export const checkAccessAuth = async (
   userId: number,
   writerId: number,
   privacy: string
-) => {
+): Promise<boolean> => {
   if (writerId == userId || privacy == 'public') {
     return true;
   } else if (privacy == 'private') {
@@ -34,17 +35,14 @@ export const checkAccessAuth = async (
   // (row.privacy == 'mate')
 
   const dbConnection = await dbPool.getConnection();
+  await dbConnection.beginTransaction();
   try {
-    const mateRows = await DiaryModel.verifyMates(
+    const verifyMates: boolean = await DiaryModel.verifyMates(
       userId,
       writerId,
       dbConnection
     );
-    if (mateRows.length == 0) {
-      return false;
-    } else {
-      return true;
-    }
+    return verifyMates;
   } catch {
     throw new Error('mate 테이블 참조 불가 오류 발생');
   } finally {
@@ -151,6 +149,32 @@ export const postDiaryService = async (
 
     await dbConnection.commit();
     return { diary_id: diaryId };
+  } catch (error) {
+    await dbConnection.rollback();
+  } finally {
+    dbConnection.release();
+  }
+};
+
+export const putDiaryService = async (userId: number, diaryId: number) => {
+  const dbConnection = await dbPool.getConnection();
+  try {
+    await dbConnection.beginTransaction();
+
+    const diaryInfo = await DiaryModel.getDiaryById(
+      diaryId,
+      dbConnection
+    );
+    if (diaryInfo.length==0) {
+      throw new CustomError(404, 'Not found that diary');
+    }
+    else if (diaryInfo[0].user_id==userId){
+      throw new CustomError(403, "No permission to access the diary")
+    }
+    else{
+      
+    }
+
   } catch (error) {
     await dbConnection.rollback();
   } finally {
