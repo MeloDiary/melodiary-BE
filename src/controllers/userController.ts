@@ -16,8 +16,8 @@ import {
   registerBackgroundImgService,
   logoutService,
   tokenRefreshService,
-  facebookSignUpService,
-  facebookLoginService
+  kakaoSignUpService,
+  kakaoLoginService
 } from '../services/userService.js';
 
 //회원가입 controller
@@ -28,7 +28,7 @@ export const signUpController = async (req: Request, res: Response) => {
       authorization_code: authorizationCode,
       state
     } = req.body;
-    const validProviders: string[] = ['google', 'naver', 'facebook'];
+    const validProviders: string[] = ['google', 'naver', 'kakao'];
 
     // 요청 구문이 잘못된 경우 400 코드 리턴함
     if (!validProviders.includes(serviceProvider))
@@ -65,9 +65,9 @@ export const signUpController = async (req: Request, res: Response) => {
       });
     }
 
-    // Facebook 회원가입 service 호출
-    if (serviceProvider === 'facebook') {
-      const result = await facebookSignUpService({
+    // Kakao 회원가입 service 호출
+    if (serviceProvider === 'kakao') {
+      const result = await kakaoSignUpService({
         serviceProvider,
         authorizationCode,
         state
@@ -99,7 +99,7 @@ export const loginController = async (req: Request, res: Response) => {
       authorization_code: authorizationCode,
       state
     } = req.body;
-    const validProviders: string[] = ['google', 'naver', 'facebook'];
+    const validProviders: string[] = ['google', 'naver', 'kakao'];
 
     // 요청 구문이 잘못된 경우 400 코드 리턴함
     if (!validProviders.includes(serviceProvider))
@@ -137,9 +137,9 @@ export const loginController = async (req: Request, res: Response) => {
       });
     }
 
-    // Facebook 로그인 service 호출
-    if (serviceProvider === 'facebook') {
-      const result = await facebookLoginService({
+    // Kakao 로그인 service 호출
+    if (serviceProvider === 'kakao') {
+      const result = await kakaoLoginService({
         serviceProvider,
         authorizationCode,
         state

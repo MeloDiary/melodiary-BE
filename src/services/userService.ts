@@ -318,48 +318,52 @@ export const naverLoginService = async (
   }
 };
 
-// Facebook 회원가입 service
-export const facebookSignUpService = async (
+// Kakao 회원가입 service
+export const kakaoSignUpService = async (
   authRequest: IAuthRequest
 ): Promise<{ userId: number; accessToken: string; refreshToken: string }> => {
   try {
     const { authorizationCode } = authRequest;
 
     // 환경 변수에서 필요한 값을 가져옵니다.
-    const clientId = process.env.FACEBOOK_CLIENT_ID;
-    const clientSecret = process.env.FACEBOOK_CLIENT_SECRET;
-    const redirectUri = process.env.FACEBOOK_REDIRECT_URI;
+    const clientId = process.env.KAKAO_CLIENT_ID;
+    const clientSecret = process.env.KAKAO_CLIENT_SECRET;
+    const redirectUri = process.env.KAKAO_REDIRECT_URI;
 
     // 필수 환경 변수가 없는 경우 오류 처리
     if (!clientId || !clientSecret || !redirectUri) {
       throw new Error(
-        'Missing necessary environment variables for Facebook OAuth'
+        'Missing necessary environment variables for Kakao OAuth'
       );
     }
 
-    // Facebook으로 부터 access token을 받아옴
-    const tokenResponse = await axios.get(
-      'https://graph.facebook.com/v12.0/oauth/access_token',
+    // Kakao로 부터 access token을 받아옴
+    const tokenResponse = await axios.post(
+      'https://kauth.kakao.com/oauth/token',
+      null,
       {
         params: {
+          grant_type: 'authorization_code',
           client_id: clientId,
           redirect_uri: redirectUri,
-          client_secret: clientSecret,
-          code: authorizationCode
+          code: authorizationCode,
+          client_secret: clientSecret
+        },
+        headers: {
+          'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
       }
     );
 
-    const facebookAccessToken = tokenResponse.data.access_token;
+    const kakaoAccessToken = tokenResponse.data.access_token;
 
-    const userResponse = await axios.get('https://graph.facebook.com/me', {
-      params: {
-        fields: 'email',
-        access_token: facebookAccessToken
+    const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
+      headers: {
+        Authorization: `Bearer ${kakaoAccessToken}`
       }
     });
 
-    const userEmail = userResponse.data.email;
+    const userEmail = userResponse.data.kakao_account.email;
 
     // 이미 존재하는 사용자인지 확인
     const isUserExists = await User.isUserExistsByEmail(userEmail);
@@ -392,53 +396,57 @@ export const facebookSignUpService = async (
 
     return { userId, accessToken, refreshToken };
   } catch (error) {
-    console.error('Error in facebookSignUp service', error);
+    console.error('Error in kakaoSignUp service', error);
     throw error;
   }
 };
 
-// Facebook 로그인 service
-export const facebookLoginService = async (
+// Kakao 로그인 service
+export const kakaoLoginService = async (
   authRequest: IAuthRequest
 ): Promise<{ userId: number; accessToken: string; refreshToken: string }> => {
   try {
     const { authorizationCode } = authRequest;
 
     // 환경 변수에서 필요한 값을 가져옵니다.
-    const clientId = process.env.FACEBOOK_CLIENT_ID;
-    const clientSecret = process.env.FACEBOOK_CLIENT_SECRET;
-    const redirectUri = process.env.FACEBOOK_REDIRECT_URI;
+    const clientId = process.env.KAKAO_CLIENT_ID;
+    const clientSecret = process.env.KAKAO_CLIENT_SECRET;
+    const redirectUri = process.env.KAKAO_REDIRECT_URI;
 
     // 필수 환경 변수가 없는 경우 오류 처리
     if (!clientId || !clientSecret || !redirectUri) {
       throw new Error(
-        'Missing necessary environment variables for Facebook OAuth'
+        'Missing necessary environment variables for Kakao OAuth'
       );
     }
 
-    // Facebook로 부터 access token을 받아옴
-    const tokenResponse = await axios.get(
-      'https://graph.facebook.com/v12.0/oauth/access_token',
+    // Kakao로 부터 access token을 받아옴
+    const tokenResponse = await axios.post(
+      'https://kauth.kakao.com/oauth/token',
+      null,
       {
         params: {
+          grant_type: 'authorization_code',
           client_id: clientId,
           redirect_uri: redirectUri,
-          client_secret: clientSecret,
-          code: authorizationCode
+          code: authorizationCode,
+          client_secret: clientSecret
+        },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
       }
     );
 
-    const facebookAccessToken = tokenResponse.data.access_token;
+    const kakaoAccessToken = tokenResponse.data.access_token;
 
-    const userResponse = await axios.get('https://graph.facebook.com/me', {
-      params: {
-        fields: 'email',
-        access_token: facebookAccessToken
+    const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
+      headers: {
+        Authorization: `Bearer ${kakaoAccessToken}`
       }
     });
 
-    const userEmail = userResponse.data.email;
+    const userEmail = userResponse.data.kakao_account.email;
 
     // 회원가입되지 않은 사용자인지 확인
     const userId = await User.isUserExistsByEmail(userEmail);
@@ -464,7 +472,7 @@ export const facebookLoginService = async (
 
     return { userId, accessToken, refreshToken };
   } catch (error) {
-    console.error('Error in naverLogin service', error);
+    console.error('Error in kakaoLogin service', error);
     throw error;
   }
 };
