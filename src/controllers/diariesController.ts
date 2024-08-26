@@ -547,7 +547,6 @@ export const deleteLike = async (req: Request, res: Response) => {
     ]);
     if (queryResult[0].affectedRows == 0) {
       res.status(404).json({ message: 'Not Found that diary' });
-      throw new Error();
     }
     const diaryQuery = `
       UPDATE diary 
@@ -954,7 +953,7 @@ const checkTodayPost = async (userId: number) => {
 
     return diaryRows.length > 0;
   } catch (error) {
-    throw new Error('Database query error: ' + error.message);
+    console.error('Database query error: ' + error.message);
   } finally {
     dbConnection.release();
   }
@@ -986,8 +985,8 @@ const checkAccessAuth = async (
     } else {
       return true;
     }
-  } catch {
-    throw new Error('mate 테이블 참조 불가 오류 발생');
+  } catch (error) {
+    console.error(error, 'mate 테이블 참조 불가 오류 발생');
   } finally {
     dbConnection.release();
   }
