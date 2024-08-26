@@ -4,10 +4,14 @@ import dbPool from '../config/dbConfig.js';
 import { IPostDiary } from '../types/diary';
 import { JwtPayload } from 'jsonwebtoken';
 import Joi from 'joi';
-import {checkAccessAuth,checkTodayPost,convertDiaryInfo}from '../services/diaryService.js'
+import {
+  checkAccessAuth,
+  checkTodayPost,
+  convertDiaryInfo,
+  postDiaryService
+} from '../services/diaryService.js';
 
 export const postDiaryController = async (req: Request, res: Response) => {
-
   try {
     // const {
     //   title,
@@ -52,16 +56,15 @@ export const postDiaryController = async (req: Request, res: Response) => {
       return res.status(409).json({ message: 'Already posted diary today' });
     }
 
+    const result = postDiaryService(req.body, userId);
 
-    res.status(201).json({ diary_id: diaryId });
+    res.status(201).json(result);
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
-    dbConnection.release();
   }
 };
 
@@ -885,4 +888,3 @@ export const getToday = async (req: Request, res: Response) => {
     });
   }
 };
-

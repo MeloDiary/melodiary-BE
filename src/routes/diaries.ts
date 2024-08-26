@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-  postDiary,
+  postDiaryController,
   deleteDiary,
   putDiary,
   getDiary,
@@ -30,7 +30,7 @@ router.get('/myposts', verifyTokenMiddleware, getMypost);
 router.get('/mymoods', verifyTokenMiddleware, getMymoods);
 router.get('/today', verifyTokenMiddleware, getToday);
 
-router.post('/', verifyTokenMiddleware, postDiary);
+router.post('/', verifyTokenMiddleware, postDiaryController);
 router.put('/:diaryId', verifyTokenMiddleware, putDiary);
 router.delete('/:diaryId', verifyTokenMiddleware, deleteDiary);
 router.get('/:diaryId', verifyTokenMiddleware, getDiary);
