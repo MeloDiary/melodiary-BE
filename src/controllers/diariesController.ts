@@ -189,10 +189,10 @@ export const putDiary = async (req: Request, res: Response) => {
     await dbConnection.execute<ResultSetHeader>(diaryQuery, [
       title,
       content,
-      mood,
-      emoji,
-      privacy,
-      background_color,
+      mood ?? null,
+      emoji ?? null,
+      privacy ?? null,
+      background_color ?? null,
       diaryId
     ]);
 
