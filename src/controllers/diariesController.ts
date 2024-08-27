@@ -63,10 +63,10 @@ export const postDiary = async (req: Request, res: Response) => {
       title,
       content,
       userId,
-      mood,
-      emoji,
-      privacy,
-      background_color
+      mood ?? null,
+      emoji ?? null,
+      privacy ?? null,
+      background_color ?? null
     ]);
     // 생성된 diary ID 가져오기
     const diaryId = result.insertId;
@@ -674,8 +674,10 @@ export const getMatefeeds = async (req: Request, res: Response) => {
     ]);
 
     let diaryRows: any[] = [];
+
     if (mateRows.length > 0) {
-      const mateIds = mateRows.map((row) => row.mate_id).join(',');
+      const mateIds = mateRows.map((row) => row.mate_id);
+      const placeholders = mateIds.map(() => '?').join(',');
 
       const diaryQuery = `
         SELECT 
@@ -699,7 +701,7 @@ export const getMatefeeds = async (req: Request, res: Response) => {
         LEFT JOIN
           user u on d.user_id = u.id          
         WHERE 
-          d.user_id IN (?) AND d.privacy IN ('mate','public')
+          d.user_id IN (${placeholders}) AND d.privacy IN ('mate','public')
         GROUP BY 
           d.id          
         ORDER BY 
@@ -708,7 +710,7 @@ export const getMatefeeds = async (req: Request, res: Response) => {
         `;
       [diaryRows] = await dbConnection.execute<RowDataPacket[]>(diaryQuery, [
         userId,
-        mateIds
+        ...mateIds
       ]);
     }
     const diaryInfos = await Promise.all(
