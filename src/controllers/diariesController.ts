@@ -449,7 +449,21 @@ export const getLike = async (req: Request, res: Response) => {
       diaryId
     ]);
 
-    res.status(200).json(userRows);
+    const user_profiles = await Promise.all(
+      userRows.map(async (row) => {
+        const profileImgURL = row.profile_img_url
+          ? await generateGetPresignedUrl(row.profile_img_url)
+          : null;
+
+        return {
+          user_id: row.user_id,
+          nickname: row.nickname,
+          profile_img_url: profileImgURL
+        };
+      })
+    );
+
+    res.status(200).json(user_profiles);
   } catch (error) {
     res
       .status(500)

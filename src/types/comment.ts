@@ -17,7 +17,7 @@ export interface IPostComment {
 export interface IUserProfile{
   user_id: number;
   nickname: string;
-  profile_img_url?: string;
+  profile_img_url?: string | null;
 }
 
 export interface IUserProfileRowDataPacket extends RowDataPacket, IUserProfile{}

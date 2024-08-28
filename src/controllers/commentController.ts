@@ -9,6 +9,7 @@ import {
 } from '../types/comment.js';
 import { JwtPayload } from 'jsonwebtoken';
 import Joi from 'joi';
+import { generateGetPresignedUrl } from '../utils/s3Utils.js';
 
 export const postComment = async (req: Request, res: Response) => {
   const dbConnection = await dbPool.getConnection();
@@ -337,10 +338,14 @@ const validateUser = async (
       [userId]
     );
     if (rows.length > 0) {
+      const profileImgURL = rows[0].profile_img_url
+      ? await generateGetPresignedUrl(rows[0].profile_img_url)
+      : null;
+
       return {
         user_id: Number(userId),
         nickname: rows[0].nickname,
-        profile_img_url: rows[0].profile_img_url
+        profile_img_url: profileImgURL
       };
     } else {
       return undefined;
