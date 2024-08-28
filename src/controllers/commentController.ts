@@ -340,7 +340,7 @@ const validateUser = async (
     if (rows.length > 0) {
       const profileImgURL = rows[0].profile_img_url
       ? await generateGetPresignedUrl(rows[0].profile_img_url)
-      : undefined;
+      : null;
 
       return {
         user_id: Number(userId),
