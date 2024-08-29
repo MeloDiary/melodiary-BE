@@ -113,7 +113,7 @@ export const postDiary = async (req: Request, res: Response) => {
   } catch (error) {
     await dbConnection.rollback();
     console.error(error);
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -255,7 +255,7 @@ export const putDiary = async (req: Request, res: Response) => {
   } catch (error) {
     await dbConnection.rollback();
     console.error('업데이트 오류:', error);
-    res.status(500).json({
+    return res.status(500).json({
       message: 'There is something wrong with the server'
     });
   } finally {
@@ -319,7 +319,7 @@ export const deleteDiary = async (req: Request, res: Response) => {
   } catch (error) {
     await dbConnection.rollback();
     console.error('삭제 오류:', error);
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -389,7 +389,7 @@ export const getDiary = async (req: Request, res: Response) => {
     res.status(200).json(diaryInfo);
   } catch (error) {
     console.error('조회 오류:', error);
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -451,7 +451,7 @@ export const getLike = async (req: Request, res: Response) => {
 
     res.status(200).json(userRows);
   } catch (error) {
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -513,7 +513,7 @@ export const postLike = async (req: Request, res: Response) => {
   } catch (error) {
     await dbConnection.rollback();
     console.error(error);
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -546,7 +546,7 @@ export const deleteLike = async (req: Request, res: Response) => {
       diaryId
     ]);
     if (queryResult[0].affectedRows == 0) {
-      res.status(404).json({ message: 'Not Found that diary' });
+      return res.status(404).json({ message: 'Not Found that diary' });
     }
     const diaryQuery = `
       UPDATE diary 
@@ -560,7 +560,7 @@ export const deleteLike = async (req: Request, res: Response) => {
   } catch (error) {
     await dbConnection.rollback();
     console.error(error);
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -867,7 +867,7 @@ export const getMypost = async (req: Request, res: Response) => {
     res.status(200).json(diaryInfos);
   } catch (error) {
     console.error(error);
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -921,7 +921,7 @@ export const getMymoods = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error(error);
-    res
+    return res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
@@ -937,7 +937,7 @@ export const getToday = async (req: Request, res: Response) => {
     res.status(200).json({ has_posts: hasPost });
   } catch (error) {
     console.error('업데이트 오류:', error);
-    res.status(500).json({
+    return res.status(500).json({
       message: 'There is something wrong with the server'
     });
   }
