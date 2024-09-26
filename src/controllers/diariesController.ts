@@ -609,9 +609,6 @@ export const getCalendar = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Not found that user' });
     }
 
-    const startDate = `${month}-01`;
-    const endDate = `${month}-31 23:59:59`; // 28일 또는 29일이 아닌 31일로 설정해서 안전하게 다 포함
-
     let range = '';
     if (userId == mateId) {
     } else {
@@ -631,11 +628,12 @@ export const getCalendar = async (req: Request, res: Response) => {
 
     let calendarQuery = `SELECT created_at AS date, id AS diary_id, emoji 
     FROM diary 
-    WHERE ${range}user_id = ? AND created_at BETWEEN ? AND ?`;
+    WHERE ${range}user_id = ? AND created_at LIKE '${month}%'
+    ORDER BY created_at`;
 
     const [calendarResult] = await dbConnection.execute<ResultSetHeader>(
       calendarQuery,
-      [mateId, startDate, endDate]
+      [mateId]
     );
 
     res.status(200).json({
@@ -690,7 +688,9 @@ export const getMatefeeds = async (req: Request, res: Response) => {
     let diaryRows: any[] = [];
 
     if (mateRows.length > 0) {
-      const mateIds = mateRows.map((row) => row.mate_id);
+      const mateIds = mateRows.map((row) => {
+        return row.mate_id;
+      });
       const placeholders = mateIds.map(() => '?').join(',');
 
       const diaryQuery = `
