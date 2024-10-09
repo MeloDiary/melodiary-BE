@@ -3,24 +3,19 @@ import { Request, Response } from 'express';
 import dbPool from '../config/dbConfig.js';
 import { IPostDiary } from '../types/diary';
 import { JwtPayload } from 'jsonwebtoken';
-import { generateGetPresignedUrl } from '../utils/s3Utils.js';
 import Joi from 'joi';
+import {
+  checkAccessAuthService,
+  checkTodayPostService,
+  convertDiaryInfoService,
+  postDiaryService
+} from '../services/diaryService.js';
+import { generateGetPresignedUrl } from '../utils/s3Utils.js';
 
-export const postDiary = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
+export const postDiaryController = async (req: Request, res: Response) => {
 
   try {
-    const {
-      title,
-      content,
-      img_urls,
-      mood,
-      emoji,
-      privacy,
-      background_color,
-      music,
-      weather
-    }: IPostDiary = req.body;
+
 
     const diarySchema = Joi.object({
       title: Joi.string().required(),
@@ -48,81 +43,24 @@ export const postDiary = async (req: Request, res: Response) => {
     }
 
     const { userId } = req.user as JwtPayload;
-    const has_posts = await checkTodayPost(userId);
+    const has_posts = await checkTodayPostService(userId);
     if (has_posts) {
       return res.status(409).json({ message: 'Already posted diary today' });
     }
+    const result = postDiaryService(req.body, userId);
 
-    await dbConnection.beginTransaction();
+    res.status(201).json(result);
 
-    // diary 테이블에 데이터 삽입
-    const diaryQuery = `INSERT INTO diary (title, content, user_id, mood, emoji, privacy, background_color) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?)`;
-
-    const [result] = await dbConnection.execute<ResultSetHeader>(diaryQuery, [
-      title,
-      content,
-      userId,
-      mood,
-      emoji,
-      privacy,
-      background_color
-    ]);
-    // 생성된 diary ID 가져오기
-    const diaryId = result.insertId;
-
-    // music table
-    if (music) {
-      const musicQuery = `
-      INSERT INTO music (diary_id, music_url, title, artist) 
-      VALUES (?, ?, ?, ?)
-    `;
-
-      await dbConnection.execute(musicQuery, [
-        diaryId,
-        music.music_url,
-        music.title,
-        music.artist
-      ]);
-    }
-
-    // weather table
-    if (weather) {
-      const weatherQuery = `
-      INSERT INTO weather (diary_id, location, icon, avg_temperature) 
-      VALUES (?, ?, ?, ?)
-    `;
-
-      await dbConnection.execute(weatherQuery, [
-        diaryId,
-        weather.location,
-        weather.icon,
-        weather.avg_temperature
-      ]);
-    }
-
-    if (img_urls && img_urls.length > 0) {
-      const imgQuery = `INSERT INTO image (diary_id, image_url,image_order) VALUES (?, ?, ?)`;
-      for (let i = 0; i < img_urls.length; i++) {
-        await dbConnection.execute(imgQuery, [diaryId, img_urls[i], i]);
-      }
-    }
-
-    await dbConnection.commit();
-    res.status(201).json({ diary_id: diaryId });
   } catch (error) {
-    await dbConnection.rollback();
     console.error(error);
     res
       .status(500)
       .json({ message: 'There is something wrong with the server' });
   } finally {
-    dbConnection.release();
   }
 };
 
-export const putDiary = async (req: Request, res: Response) => {
-  const dbConnection = await dbPool.getConnection();
+export const putDiaryContoller = async (req: Request, res: Response) => {
 
   try {
     const diarySchema = Joi.object({
